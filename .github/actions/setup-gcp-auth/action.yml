@@ -1,0 +1,35 @@
+# .github/actions/setup-gcp-auth/action.yml
+name: "Setup GCP Auth"
+description: "Authenticate to GCP using Workload Identity Federation and (optionally) set a default project"
+
+inputs:
+  project_id:
+    description: "GCP project ID (optional; used to set gcloud default project)"
+    required: false
+  workload_identity_provider:
+    description: "Full resource name of the Workload Identity Provider"
+    required: true
+  service_account:
+    description: "Service account email to impersonate"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Authenticate to GCP via WIF
+      uses: google-github-actions/auth@v3
+      with:
+        project_id: ${{ inputs.project_id }}
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        service_account: ${{ inputs.service_account }}
+
+    - name: Install gcloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ inputs.project_id }}
+
+    - name: Set default gcloud project (if provided)
+      if: inputs.project_id != ''
+      shell: bash
+      run: |
+        gcloud config set project "${{ inputs.project_id }}"

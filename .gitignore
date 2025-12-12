@@ -1,0 +1,55 @@
+# ----------------------
+# Python
+# ----------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+*.log
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Tool caches
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+
+# ----------------------
+# OS / Editor
+# ----------------------
+.DS_Store
+Thumbs.db
+
+.vscode/
+.idea/
+*.code-workspace
+
+# ----------------------
+# Environment / secrets
+# ----------------------
+.env
+.env.*
+!.env.example  # keep the example env file in git
+
+# ----------------------
+# Docker
+# ----------------------
+docker-data/
+*.tar
+
+# ----------------------
+# Local DB / misc
+# ----------------------
+postgres_data/
