@@ -1,4 +1,4 @@
-from fastapi import Request, HTTPException, status, Depends
+from fastapi import Request, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
 
@@ -8,6 +8,7 @@ class AuthContext(BaseModel):
     Represents the authenticated user + context from Clerk.
     Extend this later with roles, permissions, etc.
     """
+
     user_id: str
     organization_id: Optional[str] = None
     role: Optional[str] = None

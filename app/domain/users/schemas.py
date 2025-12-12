@@ -14,6 +14,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     """Schema for creating new user entries (usually from Clerk webhook)."""
+
     pass
 
 

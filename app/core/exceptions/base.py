@@ -6,6 +6,7 @@ class MareonError(Exception):
     Base error for all domain/service exceptions.
     Not domain-specific.
     """
+
     message = "An error occurred."
     code = "UNKNOWN_ERROR"
     status_code = status.HTTP_400_BAD_REQUEST

@@ -1,4 +1,16 @@
-.PHONY: dev
+.PHONY: dev lint fmt test migrate
 
 dev:
-	uvicorn app.main:app --reload
+	./scripts/run.sh
+
+lint:
+	./scripts/lint.sh
+
+fmt:
+	./scripts/format.sh
+
+test:
+	./scripts/test.sh
+
+migrate:
+	./scripts/migrate.sh

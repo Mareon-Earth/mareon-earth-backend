@@ -37,7 +37,9 @@ async def verify_request_with_clerk(request: Request) -> dict:
 
     if not getattr(state, "is_signed_in", False):
         reason = getattr(state, "reason", None)
-        raise InvalidAuthTokenError(metadata={"reason": str(reason) if reason else None})
+        raise InvalidAuthTokenError(
+            metadata={"reason": str(reason) if reason else None}
+        )
 
     payload = getattr(state, "payload", None) or {}
     if not isinstance(payload, dict):

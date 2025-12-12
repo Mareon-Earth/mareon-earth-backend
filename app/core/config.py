@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     env: str = "dev"
 
     # Database
-    database_url_sync: str = ""     # For Alembic (psycopg)
-    database_url_async: str = ""    # For runtime (asyncpg)
+    database_url_sync: str = ""  # For Alembic (psycopg)
+    database_url_async: str = ""  # For runtime (asyncpg)
 
     # Clerk
     clerk_secret_key: str = ""

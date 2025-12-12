@@ -1,7 +1,11 @@
-from fastapi import Depends, Request
+from fastapi import Request
 
 from app.core.auth.context import AuthContext
-from app.core.auth.exceptions import MissingOrganizationError, PendingOrganizationError, InvalidAuthTokenError
+from app.core.auth.exceptions import (
+    MissingOrganizationError,
+    PendingOrganizationError,
+    InvalidAuthTokenError,
+)
 from app.core.auth.tokens import verify_request_with_clerk
 
 

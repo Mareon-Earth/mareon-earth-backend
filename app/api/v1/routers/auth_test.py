@@ -3,6 +3,7 @@ from app.core.auth import AuthContext, get_auth_context
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
 @router.get("/whoami")
 async def whoami(ctx: AuthContext = Depends(get_auth_context)):
     return {

@@ -7,6 +7,7 @@ class ClerkWebhookEvent(BaseModel):
     Clerk webhook event envelope.
     https://clerk.com/docs/guides/development/webhooks/overview
     """
+
     object: Literal["event"] = "event"
     type: str = Field(..., description="Event type, e.g. user.created")
     data: Dict[str, Any] = Field(..., description="Event payload")

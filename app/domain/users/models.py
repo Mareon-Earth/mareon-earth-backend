@@ -20,8 +20,12 @@ class User(Base):
     full_name: Mapped[str | None] = mapped_column(String, nullable=True)
     image_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
-    last_login_at: Mapped[str | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
+    last_login_at: Mapped[str | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
 
     created_at: Mapped[str] = mapped_column(
         TIMESTAMP(timezone=True),

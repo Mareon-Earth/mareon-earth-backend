@@ -20,6 +20,7 @@ class PendingOrganizationError(ForbiddenError):
     message = "User is not yet in an organization (sts=pending)."
     code = "AUTH_ORG_PENDING"
 
+
 class WebhookSignatureError(UnauthorizedError):
     message = "Invalid webhook signature."
     code = "AUTH_WEBHOOK_INVALID_SIGNATURE"
