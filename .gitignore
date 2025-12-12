@@ -41,7 +41,7 @@ Thumbs.db
 # ----------------------
 .env
 .env.*
-!.env.example  # keep the example env file in git
+!.env.example
 
 # ----------------------
 # Docker
