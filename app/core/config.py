@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # Clerk
     clerk_secret_key: str = ""
     clerk_publishable_key: str = ""
+    clerk_webhook_secret: str = ""
 
     class Config:
         env_file = ".env"
@@ -36,6 +37,9 @@ class Settings(BaseSettings):
 
         if not self.clerk_publishable_key:
             missing.append("CLERK_PUBLISHABLE_KEY")
+
+        if not self.clerk_webhook_secret:  # <-- NEW
+            missing.append("CLERK_WEBHOOK_SECRET")
 
         if missing:
             missing_str = ", ".join(missing)
