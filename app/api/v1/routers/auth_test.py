@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.core.auth import get_auth_context, AuthContext
+from app.core.auth.auth import get_auth_context, AuthContext
 
 router = APIRouter(tags=["auth-test"])
 
