@@ -11,9 +11,6 @@ env:
   REPO_NAME: "backend"
   SERVICE_NAME: "mareon-prod-api"
   MIGRATION_JOB_NAME: "mareon-prod-migrations"
-  # TODO: Update these with your actual WIF details
-  WIF_PROVIDER: "projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
-  WIF_SERVICE_ACCOUNT: "github-actions@mareon.iam.gserviceaccount.com"
 
 jobs:
   deploy:
@@ -30,8 +27,8 @@ jobs:
         uses: ./.github/actions/gcp-auth
         with:
           project_id: ${{ env.PROJECT_ID }}
-          workload_identity_provider: ${{ env.WIF_PROVIDER }}
-          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Configure Docker Auth
         run: |
