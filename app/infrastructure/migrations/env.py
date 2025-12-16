@@ -66,7 +66,7 @@ def run_migrations_online() -> None:
             return connector.connect(
                 settings.cloud_sql_instance,
                 "pg8000",
-                user=settings.db_iam_user,
+                user=settings.migration_iam_user,
                 db=settings.db_name,
                 enable_iam_auth=True,
             )

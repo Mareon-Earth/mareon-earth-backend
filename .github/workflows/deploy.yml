@@ -2,26 +2,62 @@ name: Deploy
 
 on:
   push:
-    branches: ["main"]
-    tags: ["v*"]
+    tags:
+      - "v*.*.*"
 
 env:
-  PROJECT_ID: "mareon"
-  REGION: "europe-west1"
-  REPO_NAME: "mareon-prod-backend"
-  SERVICE_NAME: "mareon-prod-api"
-  MIGRATION_JOB_NAME: "mareon-prod-migrations"
+  PROJECT_ID: mareon
+  REGION: europe-west1
+  AR_REPO: mareon-prod-backend         # Artifact Registry repository id
+  IMAGE_NAME: mareon-prod-api          # image name inside the repo (can differ from Cloud Run service name)
+  CLOUD_RUN_SERVICE: mareon-prod-api
+  MIGRATION_JOB: mareon-prod-migrations
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     permissions:
-      contents: "read"
-      id-token: "write"
-
+      contents: read
+      id-token: write
+    outputs:
+      image_version: ${{ steps.meta.outputs.image_version }}
+      image_latest:  ${{ steps.meta.outputs.image_latest }}
+      
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: ./.github/actions/setup-gcp-auth
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Docker auth to Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Compute image tags
+        id: meta
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME}"   # e.g. v1.2.3
+          BASE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMAGE_NAME }}"
+          echo "image_version=${BASE}:${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "image_latest=${BASE}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        run: |
+          docker build -t "${{ steps.meta.outputs.image_version }}" -t "${{ steps.meta.outputs.image_latest }}" .
+          docker push "${{ steps.meta.outputs.image_version }}"
+          docker push "${{ steps.meta.outputs.image_latest }}"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Authenticate to GCP
         uses: ./.github/actions/setup-gcp-auth
@@ -30,40 +66,22 @@ jobs:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
-      - name: Configure Docker Auth
+      - name: Update and run migrations (use release image)
         run: |
-          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+          gcloud run jobs update "${{ env.MIGRATION_JOB }}" \
+            --image "${{ needs.build.outputs.image_version }}" \
+            --region "${{ env.REGION }}" \
+            --project "${{ env.PROJECT_ID }}"
 
-      - name: Build and Push Container
-        env:
-          IMAGE_NAME: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}
-        run: |
-          # Use GITHUB_SHA for versioning
-          IMAGE_TAG=${IMAGE_NAME}:${GITHUB_SHA}
-          LATEST_TAG=${IMAGE_NAME}:latest
-          
-          docker build -t $IMAGE_TAG -t $LATEST_TAG .
-          docker push $IMAGE_TAG
-          docker push $LATEST_TAG
-          
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-
-      - name: Update and Run Migrations
-        run: |
-          echo "Updating migration job with new image..."
-          gcloud run jobs update ${{ env.MIGRATION_JOB_NAME }} \
-            --image ${{ env.IMAGE_TAG }} \
-            --region ${{ env.REGION }}
-
-          echo "Executing migrations..."
-          gcloud run jobs execute ${{ env.MIGRATION_JOB_NAME }} \
-            --region ${{ env.REGION }} \
+          gcloud run jobs execute "${{ env.MIGRATION_JOB }}" \
+            --region "${{ env.REGION }}" \
+            --project "${{ env.PROJECT_ID }}" \
             --wait
 
-      - name: Deploy API Service
+      - name: Deploy API (use release image)
         run: |
-          echo "Deploying Cloud Run service..."
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image ${{ env.IMAGE_TAG }} \
-            --region ${{ env.REGION }} \
+          gcloud run deploy "${{ env.CLOUD_RUN_SERVICE }}" \
+            --image "${{ needs.build.outputs.image_version }}" \
+            --region "${{ env.REGION }}" \
+            --project "${{ env.PROJECT_ID }}" \
             --allow-unauthenticated

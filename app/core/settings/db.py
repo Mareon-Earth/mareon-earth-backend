@@ -18,6 +18,7 @@ class DatabaseSettings(BaseSettings):
     cloud_sql_instance: str = ""
     db_name: str = ""
     db_iam_user: str = ""
+    migration_iam_user: str = ""
     db_connector_ip_type: Literal["PUBLIC", "PRIVATE"] = "PRIVATE"
 
     # DB Pool
@@ -77,6 +78,8 @@ class DatabaseSettings(BaseSettings):
                 missing.append("DB_NAME")
             if not self.db_iam_user:
                 missing.append("DB_IAM_USER")
+            if not self.migration_iam_user:
+                missing.append("MIGRATION_IAM_USER")
 
         if missing:
             raise ConfigurationError(

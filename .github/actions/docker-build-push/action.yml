@@ -1,0 +1,56 @@
+name: "Docker Build & Push"
+description: "Build a Docker image and push version + latest tags to Artifact Registry."
+
+inputs:
+  image_base:
+    required: true
+    description: "Fully qualified image base (no tag), e.g. europe-west1-docker.pkg.dev/mareon/mareon-prod-backend/mareon-prod-api"
+  version:
+    required: true
+    description: "Tag version (e.g. v1.2.3)"
+  push_latest:
+    required: false
+    default: "true"
+    description: "Whether to also push :latest (true/false)"
+  context:
+    required: false
+    default: "."
+  dockerfile:
+    required: false
+    default: "Dockerfile"
+
+outputs:
+  image_version:
+    value: ${{ steps.meta.outputs.image_version }}
+  image_latest:
+    value: ${{ steps.meta.outputs.image_latest }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Compute image refs
+      id: meta
+      shell: bash
+      run: |
+        echo "image_version=${{ inputs.image_base }}:${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+        echo "image_latest=${{ inputs.image_base }}:latest" >> "$GITHUB_OUTPUT"
+
+    - name: Build
+      shell: bash
+      run: |
+        docker build \
+          -f "${{ inputs.dockerfile }}" \
+          -t "${{ steps.meta.outputs.image_version }}" \
+          -t "${{ steps.meta.outputs.image_latest }}" \
+          "${{ inputs.context }}"
+
+    - name: Push version
+      shell: bash
+      run: |
+        docker push "${{ steps.meta.outputs.image_version }}"
+
+    - name: Push latest (optional)
+      if: inputs.push_latest == 'true'
+      shell: bash
+      run: |
+        docker push "${{ steps.meta.outputs.image_latest }}"

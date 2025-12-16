@@ -1,23 +1,29 @@
 name: "Setup GCP Auth"
-description: "Authenticate to GCP"
+description: "Authenticate to GCP using Workload Identity Federation"
 
 inputs:
+  project_id:
+    description: "Optional. If set, runs `gcloud config set project`."
+    required: false
   workload_identity_provider:
     required: true
-    type: string
   service_account:
     required: true
-    type: string
-
 
 runs:
-  using: composite
+  using: "composite"
   steps:
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v3
+    - name: Authenticate to GCP via WIF
+      uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: ${{ inputs.workload_identity_provider }}
         service_account: ${{ inputs.service_account }}
 
-    - name: Set up gcloud
+    - name: Install gcloud SDK
       uses: google-github-actions/setup-gcloud@v2
+
+    - name: Set default gcloud project (if provided)
+      if: inputs.project_id != ''
+      shell: bash
+      run: |
+        gcloud config set project "${{ inputs.project_id }}"
