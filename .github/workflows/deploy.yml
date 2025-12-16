@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Authenticate to GCP
-        uses: ./.github/actions/gcp-auth
+        uses: ./.github/actions/setup-gcp-auth
         with:
           project_id: ${{ env.PROJECT_ID }}
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
