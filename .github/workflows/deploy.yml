@@ -1,0 +1,72 @@
+name: Deploy
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+
+env:
+  PROJECT_ID: "mareon"
+  REGION: "europe-west1"
+  REPO_NAME: "backend"
+  SERVICE_NAME: "mareon-prod-api"
+  MIGRATION_JOB_NAME: "mareon-prod-migrations"
+  # TODO: Update these with your actual WIF details
+  WIF_PROVIDER: "projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+  WIF_SERVICE_ACCOUNT: "github-actions@mareon.iam.gserviceaccount.com"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: ./.github/actions/gcp-auth
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+
+      - name: Configure Docker Auth
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build and Push Container
+        env:
+          IMAGE_NAME: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}
+        run: |
+          # Use GITHUB_SHA for versioning
+          IMAGE_TAG=${IMAGE_NAME}:${GITHUB_SHA}
+          LATEST_TAG=${IMAGE_NAME}:latest
+          
+          docker build -t $IMAGE_TAG -t $LATEST_TAG .
+          docker push $IMAGE_TAG
+          docker push $LATEST_TAG
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Update and Run Migrations
+        run: |
+          echo "Updating migration job with new image..."
+          gcloud run jobs update ${{ env.MIGRATION_JOB_NAME }} \
+            --image ${{ env.IMAGE_TAG }} \
+            --region ${{ env.REGION }}
+
+          echo "Executing migrations..."
+          gcloud run jobs execute ${{ env.MIGRATION_JOB_NAME }} \
+            --region ${{ env.REGION }} \
+            --wait
+
+      - name: Deploy API Service
+        run: |
+          echo "Deploying Cloud Run service..."
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.IMAGE_TAG }} \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated

@@ -7,7 +7,7 @@ from app.core.error_handlers import register_error_handlers
 
 def create_app() -> FastAPI:
     # Ensure env is loaded + validated at startup
-    get_settings()
+    settings = get_settings()
 
     app = FastAPI(
         title="Mareon Backend",
@@ -15,7 +15,7 @@ def create_app() -> FastAPI:
     )
 
     # Routers
-    app.include_router(api_router, prefix="/v1")
+    app.include_router(api_router, prefix=settings.api_v1_prefix)
 
     # Global error handlers
     register_error_handlers(app)

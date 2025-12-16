@@ -1,5 +1,6 @@
 from logging.config import fileConfig
 
+from google.cloud.sql.connector import Connector, IPTypes
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
@@ -48,10 +49,36 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
+
+    connect_args = {}
+    config_section = config.get_section(config.config_ini_section, {})
+
+    if settings.db_mode == "cloudsql_iam":
+        # Create a sync connector for migration context
+        ip_type = (
+            IPTypes.PRIVATE
+            if settings.db_connector_ip_type == "PRIVATE"
+            else IPTypes.PUBLIC
+        )
+        connector = Connector(ip_type=ip_type)
+
+        def get_conn():
+            return connector.connect(
+                settings.cloud_sql_instance,
+                "pg8000",
+                user=settings.db_iam_user,
+                db=settings.db_name,
+                enable_iam_auth=True,
+            )
+
+        # Inject the creator into the engine configuration
+        connect_args["creator"] = get_conn
+
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        config_section,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        **connect_args,
     )
 
     with connectable.connect() as connection:

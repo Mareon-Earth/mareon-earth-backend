@@ -23,3 +23,13 @@ class MareonError(Exception):
             "code": self.code,
             "metadata": self.metadata,
         }
+
+
+class ConfigurationError(MareonError):
+    """
+    Raised when application configuration is invalid at startup.
+    """
+
+    message = "Configuration error."
+    code = "CONFIG_ERROR"
+    status_code = 500
