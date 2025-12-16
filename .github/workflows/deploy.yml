@@ -8,7 +8,7 @@ on:
 env:
   PROJECT_ID: "mareon"
   REGION: "europe-west1"
-  REPO_NAME: "backend"
+  REPO_NAME: "mareon-prod-backend"
   SERVICE_NAME: "mareon-prod-api"
   MIGRATION_JOB_NAME: "mareon-prod-migrations"
 
