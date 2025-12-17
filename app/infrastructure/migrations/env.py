@@ -16,7 +16,11 @@ from app.infrastructure.database import Base
 config = context.config
 
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url_sync)
+
+if settings.db_mode == "cloudsql_iam":
+    config.set_main_option("sqlalchemy.url", "postgresql+pg8000://")
+else:
+    config.set_main_option("sqlalchemy.url", settings.database_url_sync)
 
 # Logging
 if config.config_file_name is not None:
