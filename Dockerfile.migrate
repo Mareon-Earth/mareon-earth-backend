@@ -1,17 +1,36 @@
-# Dockerfile.migrate
-FROM python
+# 1. Base Image
+FROM python:3.14-slim
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# 2. Environment Variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=off
 
+# 3. System Dependencies
+# PostgreSQL client libraries are often needed for migration drivers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 4. Create a non-root user
+RUN addgroup --system app && adduser --system --group app
+
+# 5. Set working directory
 WORKDIR /app
 
+# 6. Install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
+# 7. Copy application code
 COPY . .
 
-RUN chmod +x scripts/*.sh
+# 8. Permissions
+RUN chmod +x scripts/*.sh && \
+    chown -R app:app /app
 
+# 9. Switch to non-root user
+USER app
+
+# 10. Run Migration Script
 CMD ["./scripts/migrate.sh"]

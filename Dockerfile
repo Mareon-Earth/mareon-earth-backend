@@ -1,27 +1,44 @@
-# 1. Base Image: Use a specific Python version for reproducibility
-FROM python
+# 1. Base Image: Use the latest stable Python 3.14 slim image
+FROM python:3.14-slim
 
-# 2. Set Environment Variables to improve container behavior
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# 2. Environment Variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    # Pip configuration
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100
 
-# 3. Set the working directory inside the container
+# 3. System Dependencies
+# Install curl/netcat for healthchecks if needed
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 4. Create a non-root user
+RUN addgroup --system app && adduser --system --group app
+
+# 5. Set working directory
 WORKDIR /app
 
-# 4. Copy and install Python dependencies
+# 6. Install dependencies
+# Copy only requirements first to leverage Docker cache
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
-# 5. Copy the rest of the application code
+# 7. Copy application code
 COPY . .
 
-# 6. Make scripts executable
-RUN chmod +x scripts/*.sh
+# 8. Permission handling
+# Make scripts executable and change ownership to non-root user
+RUN chmod +x scripts/*.sh && \
+    chown -R app:app /app
 
-# 7. Expose the port the app runs on
-# The PORT env var is automatically set by Cloud Run, and run.sh uses it.
+# 9. Switch to non-root user
+USER app
+
+# 10. Expose port (Documentation only; Cloud Run handles mapping)
 EXPOSE 8000
 
-# 8. Default command to run the application (can be overridden by Cloud Run)
+# 11. Run
 CMD ["./scripts/run.sh"]

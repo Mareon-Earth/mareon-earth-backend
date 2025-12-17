@@ -1,0 +1,33 @@
+name: "Run Cloud Run Job"
+description: "Updates a Cloud Run Job image and executes it."
+
+inputs:
+  job_name:
+    description: "Name of the Cloud Run Job"
+    required: true
+  image:
+    description: "The full image reference to use (e.g. ...:v1.2.3)"
+    required: true
+  region:
+    description: "GCP Region"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Update Job Image
+      shell: bash
+      run: |
+        # Mandatory step: Cloud Run Jobs do not auto-pull "latest".
+        # We explicitly update the job to use the image for this release.
+        gcloud run jobs update "${{ inputs.job_name }}" \
+          --image "${{ inputs.image }}" \
+          --region "${{ inputs.region }}" \
+          --quiet
+
+    - name: Execute Job
+      shell: bash
+      run: |
+        gcloud run jobs execute "${{ inputs.job_name }}" \
+          --region "${{ inputs.region }}" \
+          --wait

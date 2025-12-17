@@ -1,8 +1,8 @@
-"""init users
+"""init_schema
 
-Revision ID: 173332464ab6
-Revises: b25c1321d6fd
-Create Date: 2025-12-12 03:22:28.977482
+Revision ID: bd172a7bbd2d
+Revises:
+Create Date: 2025-12-17 03:49:53.651366
 
 """
 
@@ -10,7 +10,7 @@ from typing import Sequence, Union
 
 
 # revision identifiers, used by Alembic.
-revision: str = "173332464ab6"
+revision: str = "bd172a7bbd2d"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

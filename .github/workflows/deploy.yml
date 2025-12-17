@@ -1,4 +1,4 @@
-name: Deploy
+name: Release & Deploy
 
 on:
   push:
@@ -8,80 +8,91 @@ on:
 env:
   PROJECT_ID: mareon
   REGION: europe-west1
-  AR_REPO: mareon-prod-backend         # Artifact Registry repository id
-  IMAGE_NAME: mareon-prod-api          # image name inside the repo (can differ from Cloud Run service name)
-  CLOUD_RUN_SERVICE: mareon-prod-api
+  # Artifact Registry details
+  AR_REPO: mareon-prod-backend
+  IMG_API_NAME: mareon-prod-api
+  IMG_MIGRATION_NAME: mareon-prod-migrations
+  # Cloud Run Job Name
   MIGRATION_JOB: mareon-prod-migrations
 
 jobs:
-  build:
+  # ------------------------------------------------------------------
+  # JOB 1: Build, Push, Update & Run Migrations
+  # ------------------------------------------------------------------
+  migrations:
+    name: Build & Run Migrations
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
-    outputs:
-      image_version: ${{ steps.meta.outputs.image_version }}
-      image_latest:  ${{ steps.meta.outputs.image_latest }}
-      
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Authenticate to GCP
-        uses: ./.github/actions/setup-gcp-auth
-        with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-
-      - name: Docker auth to Artifact Registry
-        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
-
-      - name: Compute image tags
-        id: meta
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME}"   # e.g. v1.2.3
-          BASE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMAGE_NAME }}"
-          echo "image_version=${BASE}:${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "image_latest=${BASE}:latest" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push
-        run: |
-          docker build -t "${{ steps.meta.outputs.image_version }}" -t "${{ steps.meta.outputs.image_latest }}" .
-          docker push "${{ steps.meta.outputs.image_version }}"
-          docker push "${{ steps.meta.outputs.image_latest }}"
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Authenticate to GCP
+      - name: Setup GCP Auth
         uses: ./.github/actions/setup-gcp-auth
         with:
           project_id: ${{ env.PROJECT_ID }}
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
-      - name: Update and run migrations (use release image)
-        run: |
-          gcloud run jobs update "${{ env.MIGRATION_JOB }}" \
-            --image "${{ needs.build.outputs.image_version }}" \
-            --region "${{ env.REGION }}" \
-            --project "${{ env.PROJECT_ID }}"
+      - name: Login to Artifact Registry
+        uses: ./.github/actions/artifact-registry-login
+        with:
+          region: ${{ env.REGION }}
 
-          gcloud run jobs execute "${{ env.MIGRATION_JOB }}" \
-            --region "${{ env.REGION }}" \
-            --project "${{ env.PROJECT_ID }}" \
-            --wait
+      - name: Build & Push Migration Image
+        id: build-mig
+        uses: ./.github/actions/docker-build-push
+        with:
+          image_base: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMG_MIGRATION_NAME }}"
+          version: ${{ github.ref_name }}
+          dockerfile: "Dockerfile.migrate"
+          push_latest: "true"
 
-      - name: Deploy API (use release image)
-        run: |
-          gcloud run deploy "${{ env.CLOUD_RUN_SERVICE }}" \
-            --image "${{ needs.build.outputs.image_version }}" \
-            --region "${{ env.REGION }}" \
-            --project "${{ env.PROJECT_ID }}" \
-            --allow-unauthenticated
+      - name: Execute Migration Job
+        uses: ./.github/actions/run-migrations
+        with:
+          job_name: ${{ env.MIGRATION_JOB }}
+          # We update the job to use the SPECIFIC version tag we just built.
+          # This guarantees the job runs the code from this specific tag.
+          image: ${{ steps.build-mig.outputs.image_version }}
+          region: ${{ env.REGION }}
+
+  # ------------------------------------------------------------------
+  # JOB 2: Build & Push API (Auto-deploy handled by GCP/Terraform)
+  # ------------------------------------------------------------------
+  deploy-api:
+    name: Build & Push API
+    needs: migrations # Strict dependency: only runs if migrations pass
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup GCP Auth
+        uses: ./.github/actions/setup-gcp-auth
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Login to Artifact Registry
+        uses: ./.github/actions/artifact-registry-login
+        with:
+          region: ${{ env.REGION }}
+
+      - name: Build & Push API Image
+        uses: ./.github/actions/docker-build-push
+        with:
+          image_base: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMG_API_NAME }}"
+          version: ${{ github.ref_name }}
+          dockerfile: "Dockerfile"
+          push_latest: "true"
+      
+      # Done. The push to :latest triggers your GCP auto-deploy mechanism.
