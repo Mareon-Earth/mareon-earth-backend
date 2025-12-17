@@ -2,9 +2,6 @@ name: "Setup GCP Auth"
 description: "Authenticate to GCP using Workload Identity Federation"
 
 inputs:
-  project_id:
-    description: "Optional. If set, runs `gcloud config set project`."
-    required: false
   workload_identity_provider:
     required: true
   service_account:
@@ -21,9 +18,3 @@ runs:
 
     - name: Install gcloud SDK
       uses: google-github-actions/setup-gcloud@v2
-
-    - name: Set default gcloud project (if provided)
-      if: inputs.project_id != ''
-      shell: bash
-      run: |
-        gcloud config set project "${{ inputs.project_id }}"
