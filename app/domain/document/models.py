@@ -107,3 +107,11 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
     document: sa.Mapped["Document"] = sa.relationship("Document", foreign_keys=[document_id])
     uploader: sa.Mapped["User"] = sa.relationship("User", foreign_keys=[uploaded_by])
     organization: sa.Mapped["Organization"] = sa.relationship("Organization", foreign_keys=[org_id])
+
+vessel_document = Table(
+    "vessel_document",
+    Base.metadata,
+    Column("vessel_id", String, ForeignKey("vessel.id", ondelete="CASCADE"), primary_key=True),
+    Column("document_id", String, ForeignKey("document.id", ondelete="CASCADE"), primary_key=True),
+    Column("created_at", TIMESTAMP(timezone=True), server_default=text("now()"), nullable=False),
+)

@@ -126,3 +126,154 @@ class VesselDimensions(TimestampsMixin, Base):
         back_populates="dimensions",
         foreign_keys=[vessel_id],
     )
+
+class VesselCertificate(Base):
+    """Vessel certificates."""
+    
+    __tablename__ = "vessel_certificate"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    document_id: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("document.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    code: Mapped[str | None] = mapped_column(String, nullable=True)
+    category: Mapped[str | None] = mapped_column(String, nullable=True)  # 'class' | 'statutory'
+    certificate_type_detail: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    issue_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    expiry_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    issue_location: Mapped[str | None] = mapped_column(String, nullable=True)
+    issuing_authority: Mapped[str | None] = mapped_column(String, nullable=True)
+    status: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="certificates")
+    document: Mapped["Document"] = relationship()
+
+
+class VesselSurvey(Base):
+    """Vessel surveys."""
+    
+    __tablename__ = "vessel_survey"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    document_id: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("document.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    code: Mapped[str | None] = mapped_column(String, nullable=True)
+    category: Mapped[str | None] = mapped_column(String, nullable=True)  # 'class' | 'statutory'
+    survey_type: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    last_survey_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    last_survey_location: Mapped[str | None] = mapped_column(String, nullable=True)
+    next_survey_from: Mapped[str | None] = mapped_column(Date, nullable=True)
+    next_survey_due: Mapped[str | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    issuing_authority: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="surveys")
+    document: Mapped["Document"] = relationship()
+
+
+class VesselMemorandum(Base):
+    """Vessel memoranda."""
+    
+    __tablename__ = "vessel_memorandum"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    document_id: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("document.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    memo_reference: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str | None] = mapped_column(String, nullable=True)
+    content: Mapped[str] = mapped_column(String, nullable=False)
+
+    issued_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    issued_location: Mapped[str | None] = mapped_column(String, nullable=True)
+    issuing_authority: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="memoranda")
+    document: Mapped["Document"] = relationship()

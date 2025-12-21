@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import enum
 
 from app.infrastructure.db import Base
