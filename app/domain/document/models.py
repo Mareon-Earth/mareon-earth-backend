@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from app.domain.organization.models import Organization
     from app.domain.users.models import User
 
-
 class Document(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
     __tablename__ = "document"
 

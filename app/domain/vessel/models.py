@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from app.domain.organization.models import Organization
     from app.domain.users.models import User
 
-
 class Vessel(UUIDPrimaryKeyMixin, TimestampsMixin, CreatedByUserMixin, OrgScopedMixin, Base):
     __tablename__ = "vessel"
 

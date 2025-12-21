@@ -37,6 +37,17 @@ class Organization(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         passive_deletes=True,
     )
 
+    # Relationships to vessel and document domains
+    vessels: Mapped[list["Vessel"]] = relationship(
+        back_populates="organization",
+        cascade="all, delete-orphan"
+    )
+    
+    documents: Mapped[list["Document"]] = relationship(
+        back_populates="organization",
+        cascade="all, delete-orphan"
+    )
+
 
 class OrganizationMember(TimestampsMixin, Base):
     __tablename__ = "organization_member"
@@ -68,3 +79,4 @@ class OrganizationMember(TimestampsMixin, Base):
         "Organization",
         back_populates="members",
     )
+
