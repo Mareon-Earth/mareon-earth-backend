@@ -8,3 +8,4 @@ pydantic-settings
 asyncpg
 cloud-sql-python-connector
 pg8000
+svix
