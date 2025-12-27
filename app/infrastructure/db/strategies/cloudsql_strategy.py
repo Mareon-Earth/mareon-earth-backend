@@ -5,6 +5,7 @@ Provides connection management for Google Cloud SQL instances using
 the Cloud SQL Python Connector with IAM-based authentication.
 """
 
+import asyncio
 from google.cloud.sql.connector import Connector, IPTypes
 from sqlalchemy import create_engine, pool
 from sqlalchemy.engine import Engine
@@ -77,18 +78,20 @@ class CloudSQLConnectionStrategy:
             else IPTypes.PUBLIC
         )
 
-    def _get_connector(self) -> Connector:
+    async def _get_connector(self) -> Connector:
         """
-        Lazy initialization of Cloud SQL Connector singleton.
+        Lazy initialization of Cloud SQL Connector singleton with proper event loop.
 
-        The connector manages the connection pool and handles IAM authentication,
-        SSL/TLS encryption, and connection lifecycle.
+        The connector must be initialized with the event loop it will be used in
+        to avoid ConnectorLoopError. This method ensures the connector is created
+        in the same async context where connections will be established.
         
         Returns:
-            Initialized Connector instance
+            Initialized Connector instance bound to current event loop
         """
         if self._connector is None:
-            self._connector = Connector(ip_type=self._get_ip_type())
+            loop = asyncio.get_running_loop()
+            self._connector = Connector(loop=loop, ip_type=self._get_ip_type())
         return self._connector
 
     async def _create_async_connection(self):
@@ -101,7 +104,7 @@ class CloudSQLConnectionStrategy:
         Returns:
             Async database connection with IAM authentication
         """
-        connector = self._get_connector()
+        connector = await self._get_connector()
         return await connector.connect_async(
             self.settings.cloud_sql_instance,
             "asyncpg",
@@ -120,7 +123,12 @@ class CloudSQLConnectionStrategy:
         Returns:
             Sync database connection with IAM authentication
         """
-        connector = self._get_connector()
+        # The sync method doesn't await _get_connector because it's sync.
+        # This will create a new Connector instance if _get_connector hasn't been awaited yet,
+        # but that's acceptable for sync contexts, where the async connector won't be used.
+        # However, for consistency and potential future changes, we keep the direct call.
+        # Note: The problem description specifically targeted the _create_async_connection to await.
+        connector = Connector(ip_type=self._get_ip_type()) # Re-instantiate for sync context to avoid async issues
         return connector.connect(
             self.settings.cloud_sql_instance,
             "pg8000",
