@@ -4,7 +4,6 @@ from datetime import datetime
 from app.domain.organization.models import OrganizationRole
 
 
-# Organization Schemas
 class OrganizationBase(BaseModel):
     clerk_id: str
     name: str
@@ -13,7 +12,6 @@ class OrganizationBase(BaseModel):
 
 
 class OrganizationCreate(OrganizationBase):
-    """Schema for creating new organization entries (usually from Clerk webhook)."""
     pass
 
 
@@ -32,15 +30,13 @@ class OrganizationRead(OrganizationBase):
         from_attributes = True
 
 
-# OrgMember Schemas
 class OrganizationMemberBase(BaseModel):
     user_id: str
     org_id: str
-    role: OrganizationRole = OrganizationRole.MEMBER
+    role: OrganizationRole
 
 
 class OrganizationMemberCreate(OrganizationMemberBase):
-    """Schema for adding a member to an organization."""
     pass
 
 
@@ -50,6 +46,7 @@ class OrganizationMemberUpdate(BaseModel):
 
 class OrganizationMemberRead(OrganizationMemberBase):
     created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True

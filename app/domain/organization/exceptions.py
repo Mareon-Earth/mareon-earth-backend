@@ -8,19 +8,7 @@ class OrganizationNotFoundError(MareonError):
     status_code = status.HTTP_404_NOT_FOUND
 
 
-class OrganizationAlreadyExistsError(MareonError):
-    message = "Organization already exists."
-    code = "ORGANIZATION_ALREADY_EXISTS"
-    status_code = status.HTTP_409_CONFLICT
-
-
-class OrgMemberNotFoundError(MareonError):
+class OrganizationMemberNotFoundError(MareonError):
     message = "Organization member not found."
-    code = "ORG_MEMBER_NOT_FOUND"
+    code = "ORGANIZATION_MEMBER_NOT_FOUND"
     status_code = status.HTTP_404_NOT_FOUND
-
-
-class OrgMemberAlreadyExistsError(MareonError):
-    message = "User is already a member of this organization."
-    code = "ORG_MEMBER_ALREADY_EXISTS"
-    status_code = status.HTTP_409_CONFLICT

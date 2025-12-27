@@ -6,9 +6,13 @@ from app.domain.users.schemas import UserCreate, UserUpdate
 from app.domain.organization.schemas import OrganizationCreate, OrganizationUpdate
 from app.domain.organization.models import OrganizationRole
 from app.services.users import UserService
+from app.services.users.repository import UserRepository
 from app.services.organizations import OrganizationService
 
 logger = logging.getLogger(__name__)
+
+user_service = UserService(user_repository=UserRepository())
+org_service = OrganizationService()
 
 
 class WebhookHandlers:
@@ -32,7 +36,7 @@ class WebhookHandlers:
                 full_name=f"{data.get('first_name', '')} {data.get('last_name', '')}".strip() or None,
                 image_url=data.get("image_url"),
             )
-            await UserService.get_or_create_from_clerk(db, payload)
+            await user_service.get_or_create_from_clerk(db, payload)
             logger.info(f"User created: {data['id']}")
         except Exception as e:
             logger.error(f"Failed to handle user.created: {e}", exc_info=True)
@@ -51,7 +55,7 @@ class WebhookHandlers:
                 full_name=f"{data.get('first_name', '')} {data.get('last_name', '')}".strip() or None,
                 image_url=data.get("image_url"),
             )
-            await UserService.update_user(db, data["id"], payload)
+            await user_service.update_user(db, data["id"], payload)
             logger.info(f"User updated: {data['id']}")
         except Exception as e:
             logger.error(f"Failed to handle user.updated: {e}", exc_info=True)
@@ -64,7 +68,7 @@ class WebhookHandlers:
         Deletes user from local database when deleted in Clerk.
         """
         try:
-            await UserService.delete_user(db, data["id"])
+            await user_service.delete_user(db, data["id"])
             logger.info(f"User deleted: {data['id']}")
         except Exception as e:
             logger.error(f"Failed to handle user.deleted: {e}", exc_info=True)
@@ -82,7 +86,7 @@ class WebhookHandlers:
                 name=data["name"],
                 logo_url=data.get("logo_url"),
             )
-            await OrganizationService.get_or_create_from_clerk(db, payload)
+            await org_service.get_or_create_from_clerk(db, payload)
             logger.info(f"Organization created: {data['id']}")
         except Exception as e:
             logger.error(f"Failed to handle organization.created: {e}", exc_info=True)
@@ -99,7 +103,7 @@ class WebhookHandlers:
                 name=data.get("name"),
                 logo_url=data.get("logo_url"),
             )
-            await OrganizationService.update_organization(db, data["id"], payload)
+            await org_service.update_organization(db, data["id"], payload)
             logger.info(f"Organization updated: {data['id']}")
         except Exception as e:
             logger.error(f"Failed to handle organization.updated: {e}", exc_info=True)
@@ -112,7 +116,7 @@ class WebhookHandlers:
         Removes local organization record (cascades to members).
         """
         try:
-            await OrganizationService.delete_organization(db, data["id"])
+            await org_service.delete_organization(db, data["id"])
             logger.info(f"Organization deleted: {data['id']}")
         except Exception as e:
             logger.error(f"Failed to handle organization.deleted: {e}", exc_info=True)
@@ -132,10 +136,10 @@ class WebhookHandlers:
             role = WebhookHandlers._map_clerk_role(clerk_role)
 
             # Get internal IDs from Clerk IDs
-            user = await UserService.get_user_by_clerk_id(db, data["public_user_data"]["user_id"])
-            org = await OrganizationService.get_organization(db, data["organization"]["id"])
+            user = await user_service.get_user_by_clerk_id(db, data["public_user_data"]["user_id"])
+            org = await org_service.get_organization(db, data["organization"]["id"])
 
-            await OrganizationService.add_member(db, user.id, org.id, role)
+            await org_service.add_member(db, user.id, org.id, role)
             logger.info(
                 f"Member added: user={data['public_user_data']['user_id']}, "
                 f"org={data['organization']['id']}, role={role}"
@@ -158,10 +162,10 @@ class WebhookHandlers:
             clerk_role = data.get("role", "basic_member")
             role = WebhookHandlers._map_clerk_role(clerk_role)
 
-            user = await UserService.get_user_by_clerk_id(db, data["public_user_data"]["user_id"])
-            org = await OrganizationService.get_organization(db, data["organization"]["id"])
+            user = await user_service.get_user_by_clerk_id(db, data["public_user_data"]["user_id"])
+            org = await org_service.get_organization(db, data["organization"]["id"])
 
-            await OrganizationService.update_member_role(db, user.id, org.id, role)
+            await org_service.update_member_role(db, user.id, org.id, role)
             logger.info(
                 f"Member updated: user={data['public_user_data']['user_id']}, "
                 f"org={data['organization']['id']}, new_role={role}"
@@ -181,10 +185,10 @@ class WebhookHandlers:
         Removes user from organization.
         """
         try:
-            user = await UserService.get_user_by_clerk_id(db, data["public_user_data"]["user_id"])
-            org = await OrganizationService.get_organization(db, data["organization"]["id"])
+            user = await user_service.get_user_by_clerk_id(db, data["public_user_data"]["user_id"])
+            org = await org_service.get_organization(db, data["organization"]["id"])
 
-            await OrganizationService.remove_member(db, user.id, org.id)
+            await org_service.remove_member(db, user.id, org.id)
             logger.info(
                 f"Member removed: user={data['public_user_data']['user_id']}, "
                 f"org={data['organization']['id']}"
