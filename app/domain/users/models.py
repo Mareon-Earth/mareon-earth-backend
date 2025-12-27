@@ -1,9 +1,10 @@
 from sqlalchemy import String, Boolean, TIMESTAMP, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.infrastructure.db import Base
+from app.infrastructure.db.mixins import TimestampsMixin
 
 
-class User(Base):
+class User(TimestampsMixin, Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(
@@ -25,16 +26,4 @@ class User(Base):
     )
     last_login_at: Mapped[str | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
-    )
-
-    created_at: Mapped[str] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=text("now()"),
-    )
-
-    updated_at: Mapped[str] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=text("now()"),
     )
