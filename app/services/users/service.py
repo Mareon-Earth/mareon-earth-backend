@@ -12,9 +12,6 @@ class UserService:
         db: AsyncSession,
         payload: UserCreate,
     ) -> User:
-        """
-        Used for Clerk webhook: ensure user exists locally.
-        """
         existing = await UserRepository.get_by_clerk_id(db, payload.clerk_user_id)
         if existing:
             return existing
@@ -53,3 +50,18 @@ class UserService:
         if not user:
             raise UserNotFoundError()
         return user
+
+    @staticmethod
+    async def delete_user(
+        db: AsyncSession,
+        clerk_user_id: str,
+    ) -> None:
+        """
+        Delete user from database.
+        Triggered by Clerk user.deleted webhook.
+        """
+        user = await UserRepository.get_by_clerk_id(db, clerk_user_id)
+        if not user:
+            raise UserNotFoundError()
+
+        await UserRepository.delete(db, user)

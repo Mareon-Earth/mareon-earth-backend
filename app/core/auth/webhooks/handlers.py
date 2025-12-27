@@ -61,12 +61,14 @@ class WebhookHandlers:
     async def handle_user_deleted(db: AsyncSession, data: Dict[str, Any]) -> None:
         """
         Handle user.deleted event.
-        Note: Consider soft-delete or data retention policies.
-        For now, we just log it. Implement deletion if needed.
+        Deletes user from local database when deleted in Clerk.
         """
-        logger.info(f"User deleted event received: {data.get('id')}")
-        # TODO: Implement user deletion or soft-delete if required
-        pass
+        try:
+            await UserService.delete_user(db, data["id"])
+            logger.info(f"User deleted: {data['id']}")
+        except Exception as e:
+            logger.error(f"Failed to handle user.deleted: {e}", exc_info=True)
+            raise
 
     @staticmethod
     async def handle_organization_created(db: AsyncSession, data: Dict[str, Any]) -> None:

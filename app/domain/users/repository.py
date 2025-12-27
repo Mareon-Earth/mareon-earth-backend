@@ -43,3 +43,9 @@ class UserRepository:
         stmt = select(User).where(User.id == user_id)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
+
+    @staticmethod
+    async def delete(db: AsyncSession, user: User) -> None:
+        """Delete user from database."""
+        await db.delete(user)
+        await db.commit()
