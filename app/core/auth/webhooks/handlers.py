@@ -3,11 +3,11 @@ from typing import Any, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.users.schemas import UserCreate, UserUpdate
+from app.domain.users.repository import UserRepository
 from app.domain.organization.schemas import OrganizationCreate, OrganizationUpdate
 from app.domain.organization.models import OrganizationRole
-from app.services.users import UserService
-from app.services.users.repository import UserRepository
-from app.services.organizations import OrganizationService
+from app.services.user_service import UserService
+from app.services.organization_service import OrganizationService
 
 logger = logging.getLogger(__name__)
 
