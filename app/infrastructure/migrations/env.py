@@ -6,6 +6,7 @@ from app.core.config import get_settings
 from app.infrastructure.db.session_manager import Base
 from app.infrastructure.db.engine_factory import EngineFactory
 
+import app.domain
 
 config = context.config
 settings = get_settings()
