@@ -17,6 +17,7 @@ class UserRepository(UserRepositoryProtocol):
         return result.scalar_one_or_none()
     
     async def get_by_id(self, db: AsyncSession, user_id: str) -> User | None:
+        """Retrieve a user by their ID."""
         stmt = select(User).where(User.id == user_id)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
