@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from app.domain.organization.models import OrgRole
+from app.domain.organization.models import OrganizationRole
 
 
 # Organization Schemas
@@ -33,22 +33,22 @@ class OrganizationRead(OrganizationBase):
 
 
 # OrgMember Schemas
-class OrgMemberBase(BaseModel):
+class OrganizationMemberBase(BaseModel):
     user_id: str
     org_id: str
-    role: OrgRole = OrgRole.MEMBER
+    role: OrganizationRole = OrganizationRole.MEMBER
 
 
-class OrgMemberCreate(OrgMemberBase):
+class OrganizationMemberCreate(OrganizationMemberBase):
     """Schema for adding a member to an organization."""
     pass
 
 
-class OrgMemberUpdate(BaseModel):
-    role: Optional[OrgRole] = None
+class OrganizationMemberUpdate(BaseModel):
+    role: Optional[OrganizationRole] = None
 
 
-class OrgMemberRead(OrgMemberBase):
+class OrganizationMemberRead(OrganizationMemberBase):
     created_at: datetime
 
     class Config:

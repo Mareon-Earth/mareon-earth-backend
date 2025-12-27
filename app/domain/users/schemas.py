@@ -19,12 +19,12 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
+    email: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     full_name: Optional[str] = None
     image_url: Optional[str] = None
     is_active: Optional[bool] = None
-    last_login_at: Optional[datetime] = None
 
 
 class UserRead(UserBase):

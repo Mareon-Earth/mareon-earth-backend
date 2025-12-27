@@ -24,6 +24,3 @@ class User(TimestampsMixin, Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("true")
     )
-    last_login_at: Mapped[str | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
-    )

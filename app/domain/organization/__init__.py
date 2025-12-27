@@ -1,12 +1,12 @@
-from .models import Organization, OrgMember, OrgRole
+from .models import Organization, OrganizationMember, OrganizationRole
 from .repository import OrganizationRepository, OrgMemberRepository
 from .schemas import (
     OrganizationCreate,
     OrganizationUpdate,
     OrganizationRead,
-    OrgMemberCreate,
-    OrgMemberUpdate,
-    OrgMemberRead,
+    OrganizationMemberCreate,
+    OrganizationMemberUpdate,
+    OrganizationMemberRead,
 )
 from .exceptions import (
     OrganizationNotFoundError,
@@ -18,19 +18,16 @@ from .exceptions import (
 __all__ = [
     # Models
     "Organization",
-    "OrgMember",
-    "OrgRole",
-    # Repositories
+    "OrganizationMember",
+    "OrganizationRole",
     "OrganizationRepository",
     "OrgMemberRepository",
-    # Schemas
     "OrganizationCreate",
     "OrganizationUpdate",
     "OrganizationRead",
-    "OrgMemberCreate",
-    "OrgMemberUpdate",
-    "OrgMemberRead",
-    # Exceptions
+    "OrganizationMemberCreate",
+    "OrganizationMemberUpdate",
+    "OrganizationMemberRead",
     "OrganizationNotFoundError",
     "OrganizationAlreadyExistsError",
     "OrgMemberNotFoundError",

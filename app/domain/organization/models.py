@@ -17,7 +17,7 @@ from app.infrastructure.db.sa import (
 from app.infrastructure.db.mixins import UUIDPrimaryKeyMixin, TimestampsMixin, CreatedAtMixin
 
 
-class OrgRole(str, enum.Enum):
+class OrganizationRole(str, enum.Enum):
     OWNER = "OWNER"
     ADMIN = "ADMIN"
     MEMBER = "MEMBER"
@@ -32,16 +32,16 @@ class Organization(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     logo_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    members: Mapped[list["OrgMember"]] = relationship(
-        "OrgMember",
+    members: Mapped[list["OrganizationMember"]] = relationship(
+        "OrganizationMember",
         back_populates="organization",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
 
 
-class OrgMember(CreatedAtMixin, Base):
-    __tablename__ = "org_member"
+class OrganizationMember(TimestampsMixin, Base):
+    __tablename__ = "organization_member"
 
     user_id: Mapped[str] = mapped_column(
         String,
@@ -54,10 +54,10 @@ class OrgMember(CreatedAtMixin, Base):
         nullable=False,
     )
 
-    role: Mapped[OrgRole] = mapped_column(
-        SAEnum(OrgRole, name="org_role", native_enum=False),
+    role: Mapped[OrganizationRole] = mapped_column(
+        SAEnum(OrganizationRole, name="org_role", native_enum=False),
         nullable=False,
-        server_default=text(f"'{OrgRole.MEMBER.value}'"),
+        server_default=text(f"'{OrganizationRole.MEMBER.value}'"),
     )
 
     __table_args__ = (

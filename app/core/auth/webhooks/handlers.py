@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.users.schemas import UserCreate, UserUpdate
 from app.domain.organization.schemas import OrganizationCreate, OrganizationUpdate
-from app.domain.organization.models import OrgRole
+from app.domain.organization.models import OrganizationRole
 from app.services.users import UserService
 from app.services.organizations import OrganizationService
 
@@ -196,7 +196,7 @@ class WebhookHandlers:
             raise
 
     @staticmethod
-    def _map_clerk_role(clerk_role: str) -> OrgRole:
+    def _map_clerk_role(clerk_role: str) -> OrganizationRole:
         """
         Map Clerk organization roles to internal OrgRole enum.
         Clerk roles: org:admin, org:member, basic_member, admin, etc.
@@ -204,11 +204,11 @@ class WebhookHandlers:
         role_lower = clerk_role.lower()
         
         if "admin" in role_lower:
-            return OrgRole.ADMIN
+            return OrganizationRole.ADMIN
         elif role_lower in ("org:owner", "owner"):
-            return OrgRole.OWNER
+            return OrganizationRole.OWNER
         else:
-            return OrgRole.MEMBER
+            return OrganizationRole.MEMBER
 
 
 async def dispatch_webhook_event(
