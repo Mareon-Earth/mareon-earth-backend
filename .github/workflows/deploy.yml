@@ -4,6 +4,17 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      run_migrations:
+        description: 'Force run database migrations'
+        required: false
+        type: boolean
+        default: false
+      tag:
+        description: 'Tag to deploy (e.g., v1.2.3)'
+        required: true
+        type: string
 
 env:
   PROJECT_ID: mareon
@@ -17,10 +28,66 @@ env:
 
 jobs:
   # ------------------------------------------------------------------
-  # JOB 1: Build, Push, Update & Run Migrations
+  # JOB 0: Detect if migrations are needed
+  # ------------------------------------------------------------------
+  check-migrations:
+    name: Check Migration Changes
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for comparison
+
+      - name: Detect Migration Changes
+        id: check
+        run: |
+          # Check if manually triggered with run_migrations=true
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ github.event.inputs.run_migrations }}" == "true" ]]; then
+              echo "should_run=true" >> "$GITHUB_OUTPUT"
+              echo "✅ Migrations forced via manual trigger"
+              exit 0
+            fi
+          fi
+
+          # For tag pushes, check if migration files changed
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            # Get previous tag
+            CURRENT_TAG="${{ github.ref_name }}"
+            PREV_TAG=$(git tag --sort=-version:refname | grep -A1 "^${CURRENT_TAG}$" | tail -1)
+
+            if [[ -z "$PREV_TAG" ]]; then
+              echo "should_run=true" >> "$GITHUB_OUTPUT"
+              echo "✅ First release - running migrations"
+              exit 0
+            fi
+
+            # Check if migration files changed
+            MIGRATION_CHANGES=$(git diff --name-only "${PREV_TAG}" "${CURRENT_TAG}" | grep "^app/infrastructure/migrations/versions/" || true)
+
+            if [[ -n "$MIGRATION_CHANGES" ]]; then
+              echo "should_run=true" >> "$GITHUB_OUTPUT"
+              echo "✅ Migration files changed - running migrations"
+              echo "Changed files:"
+              echo "$MIGRATION_CHANGES"
+            else
+              echo "should_run=false" >> "$GITHUB_OUTPUT"
+              echo "⏭️  No migration changes detected - skipping migrations"
+            fi
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+
+  # ------------------------------------------------------------------
+  # JOB 1: Build, Push, Update & Run Migrations (Conditional)
   # ------------------------------------------------------------------
   migrations:
     name: Build & Run Migrations
+    needs: check-migrations
+    if: needs.check-migrations.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -65,7 +132,12 @@ jobs:
   # ------------------------------------------------------------------
   deploy-api:
     name: Build & Push API
-    needs: migrations # Strict dependency: only runs if migrations pass
+    needs: [check-migrations, migrations]
+    # Run if: check passed AND (migrations not needed OR migrations succeeded)
+    if: |
+      always() &&
+      needs.check-migrations.result == 'success' &&
+      (needs.check-migrations.outputs.should_run == 'false' || needs.migrations.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -87,11 +159,20 @@ jobs:
         with:
           region: ${{ env.REGION }}
 
+      - name: Set Version Tag
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build & Push API Image
         uses: ./.github/actions/docker-build-push
         with:
           image_base: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMG_API_NAME }}"
-          version: ${{ github.ref_name }}
+          version: ${{ steps.version.outputs.tag }}
           dockerfile: "Dockerfile"
           push_latest: "true"
       
