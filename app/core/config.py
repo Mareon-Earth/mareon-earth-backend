@@ -22,14 +22,22 @@ class Settings(AppSettings, AuthSettings, DatabaseSettings, LogSettings, BaseSet
 
     def ensure_valid(self) -> "Settings":
         """
-        Runtime sanity check for required variables.
-        Delegates validation to individual modules.
+        Runtime validation for required configuration.
+        
+        Database validation happens via EngineFactory instantiation,
+        which validates mode-specific requirements before creating engines.
         """
-        self.validate_db()
+        # Validate auth settings
         self.validate_auth()
+        
+        # Database validation happens when EngineFactory is instantiated
+        # This is done in database.py and migrations/env.py
+        # The factory will raise ConfigurationError if settings are invalid
+        
         return self
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
+    """Get cached settings instance with validation."""
     return Settings().ensure_valid()

@@ -1,12 +1,10 @@
 from logging.config import fileConfig
 
-from google.cloud.sql.connector import Connector, IPTypes
-from sqlalchemy import create_engine
-from sqlalchemy import pool
 from alembic import context
 
 from app.core.config import get_settings
-from app.infrastructure.database import Base
+from app.infrastructure.db.session_manager import Base
+from app.infrastructure.db.engine_factory import EngineFactory
 
 
 config = context.config
@@ -20,11 +18,13 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    url = (
-        "postgresql+pg8000://"
-        if settings.db_mode == "cloudsql_iam"
-        else settings.database_url_sync
-    )
+    """
+    Run migrations in 'offline' mode.
+    
+    This generates SQL scripts without connecting to the database.
+    """
+    factory = EngineFactory(settings)
+    url = factory.get_offline_url()
 
     context.configure(
         url=url,
@@ -40,34 +40,13 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    if settings.db_mode == "cloudsql_iam":
-        ip_type = (
-            IPTypes.PRIVATE
-            if settings.db_connector_ip_type == "PRIVATE"
-            else IPTypes.PUBLIC
-        )
-        connector = Connector(ip_type=ip_type)
-
-        def get_conn():
-            return connector.connect(
-                settings.cloud_sql_instance,
-                "pg8000",
-                user=settings.migration_iam_user,
-                db=settings.db_name,
-                enable_iam_auth=True,
-            )
-
-        connectable = create_engine(
-            "postgresql+pg8000://",
-            creator=get_conn,
-            poolclass=pool.NullPool,
-        )
-    else:
-        # IMPORTANT: make sure this URL includes a driver, e.g. postgresql+pg8000://
-        connectable = create_engine(
-            settings.database_url_sync,
-            poolclass=pool.NullPool,
-        )
+    """
+    Run migrations in 'online' mode.
+    
+    Creates an actual database connection and runs migrations.
+    """
+    factory = EngineFactory(settings)
+    connectable = factory.create_sync_engine()
 
     with connectable.connect() as connection:
         context.configure(

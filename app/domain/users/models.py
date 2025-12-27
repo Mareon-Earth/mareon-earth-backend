@@ -1,6 +1,6 @@
 from sqlalchemy import String, Boolean, TIMESTAMP, text
 from sqlalchemy.orm import Mapped, mapped_column
-from app.infrastructure.database import Base
+from app.infrastructure.db import Base
 
 
 class User(Base):
