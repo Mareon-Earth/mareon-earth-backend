@@ -135,9 +135,23 @@ class WebhookHandlers:
             clerk_role = data.get("role", "basic_member")
             role = WebhookHandlers._map_clerk_role(clerk_role)
 
-            # Get internal IDs from Clerk IDs
-            user = await user_service.get_user_by_clerk_id(db, data["public_user_data"]["user_id"])
-            org = await org_service.get_organization(db, data["organization"]["id"])
+            # Ensure user exists (get or create from webhook data)
+            user_payload = UserCreate(
+                clerk_user_id=data["public_user_data"]["user_id"],
+                email=data["public_user_data"].get("identifier", ""),
+                first_name=data["public_user_data"].get("first_name"),
+                last_name=data["public_user_data"].get("last_name"),
+                full_name=f"{data['public_user_data'].get('first_name', '')} {data['public_user_data'].get('last_name', '')}".strip() or None,
+            )
+            user = await user_service.get_or_create_from_clerk(db, user_payload)
+
+            # Ensure organization exists (get or create from webhook data)
+            org_payload = OrganizationCreate(
+                clerk_id=data["organization"]["id"],
+                name=data["organization"]["name"],
+                logo_url=data["organization"].get("logo_url"),
+            )
+            org = await org_service.get_or_create_from_clerk(db, org_payload)
 
             await org_service.add_member(db, user.id, org.id, role)
             logger.info(
@@ -162,8 +176,23 @@ class WebhookHandlers:
             clerk_role = data.get("role", "basic_member")
             role = WebhookHandlers._map_clerk_role(clerk_role)
 
-            user = await user_service.get_user_by_clerk_id(db, data["public_user_data"]["user_id"])
-            org = await org_service.get_organization(db, data["organization"]["id"])
+            # Ensure user exists
+            user_payload = UserCreate(
+                clerk_user_id=data["public_user_data"]["user_id"],
+                email=data["public_user_data"].get("identifier", ""),
+                first_name=data["public_user_data"].get("first_name"),
+                last_name=data["public_user_data"].get("last_name"),
+                full_name=f"{data['public_user_data'].get('first_name', '')} {data['public_user_data'].get('last_name', '')}".strip() or None,
+            )
+            user = await user_service.get_or_create_from_clerk(db, user_payload)
+
+            # Ensure organization exists
+            org_payload = OrganizationCreate(
+                clerk_id=data["organization"]["id"],
+                name=data["organization"]["name"],
+                logo_url=data["organization"].get("logo_url"),
+            )
+            org = await org_service.get_or_create_from_clerk(db, org_payload)
 
             await org_service.update_member_role(db, user.id, org.id, role)
             logger.info(
@@ -185,6 +214,7 @@ class WebhookHandlers:
         Removes user from organization.
         """
         try:
+            # For deletion, we expect both user and org to exist
             user = await user_service.get_user_by_clerk_id(db, data["public_user_data"]["user_id"])
             org = await org_service.get_organization(db, data["organization"]["id"])
 
