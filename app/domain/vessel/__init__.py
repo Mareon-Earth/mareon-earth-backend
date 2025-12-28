@@ -17,7 +17,9 @@ from app.domain.vessel.schemas import (
     VesselIdentityCreate,
     VesselIdentityRead,
 
-from app.domain.vessel.models import (
+from .models import (
+    Vessel,
+    VesselIdentity,
     VesselCertificate,
     VesselSurvey,
     VesselMemorandum,
