@@ -23,9 +23,18 @@ from app.infrastructure.db.mixins import UUIDPrimaryKeyMixin, TimestampsMixin, C
 from app.domain.organization.models import Organization
 from app.domain.users.models import User
 
+class DocumentContentType(str, enum.Enum):
+    PDF = "PDF"
+    IMAGE = "IMAGE"
+    DOCX = "DOCX"
+    XLSX = "XLSX"
+    CSV = "CSV"
+    PPTX = "PPTX"
+    TXT = "TXT"
+    OTHER = "OTHER"
 
 class DocumentType(str, enum.Enum):
-    CSR = "CSR"
+    CLASS_STATUS_REPORT = "CLASS_STATUS_REPORT"
     GA_PLAN = "GA_PLAN"
     MACHINERY_LIST = "MACHINERY_LIST"
     SURVEY_REPORT = "SURVEY_REPORT"
@@ -85,21 +94,34 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         ForeignKey("document.id", ondelete="CASCADE"),
         nullable=False,
     )
+
+    # IMPORTANT: you need this if you want UNIQUE(org_id, md5)
+    org_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("organization.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
     original_name: Mapped[str | None] = mapped_column(Text, nullable=True)
-    file_extension: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Raw upload metadata (keep for debugging + edge cases)
     mime_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     file_size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    hash_sha256: Mapped[str | None] = mapped_column(Text, nullable=True)
-    version_number: Mapped[int] = mapped_column(
+
+    # Canonical type your app uses for parsing/routing
+    content_type: Mapped["DocumentContentType"] = mapped_column(
+        SAEnum(DocumentContentType, name="document_content_type", native_enum=False),
         nullable=False,
-        server_default=text("1"),
+        server_default=text(f"'{DocumentContentType.OTHER.value}'"),
     )
-    is_latest: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default=text("true"),
-    )
+
+    # GCS md5Hash (base64)
+    content_md5_b64: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    version_number: Mapped[int] = mapped_column(nullable=False, server_default=text("1"))
+    is_latest: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+
     uploaded_by: Mapped[str | None] = mapped_column(
         String,
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -110,32 +132,27 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         nullable=False,
         server_default=text("now()"),
     )
+
     processing_status: Mapped[ProcessingStatus] = mapped_column(
         SAEnum(ProcessingStatus, name="processing_status", native_enum=False),
         nullable=False,
         server_default=text(f"'{ProcessingStatus.PENDING.value}'"),
     )
-    processed_at: Mapped[DateTime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
+    processed_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     processing_errors: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
-        UniqueConstraint("document_id", "hash_sha256", name="uq_document_file_doc_hash"),
+        UniqueConstraint("org_id", "content_md5_b64", name="uq_document_file_org_md5"),
         Index("ix_document_file_document_id", "document_id"),
+        Index("ix_document_file_org_id", "org_id"),
         Index("ix_document_file_processing_status", "processing_status"),
         Index("ix_document_file_is_latest", "is_latest"),
     )
 
-    document: Mapped["Document"] = relationship(
-        "Document",
-        foreign_keys=[document_id],
-    )
-    uploader: Mapped["User"] = relationship(
-        "User",
-        foreign_keys=[uploaded_by],
-    )
+    document: Mapped["Document"] = relationship("Document", foreign_keys=[document_id])
+    uploader: Mapped["User"] = relationship("User", foreign_keys=[uploaded_by])
+    organization: Mapped["Organization"] = relationship("Organization", foreign_keys=[org_id])
+
     
 class VesselDocument(CreatedAtMixin, Base):
     __tablename__ = "vessel_document"
@@ -183,3 +200,4 @@ class FleetDocument(CreatedAtMixin, Base):
     # Relationships will be added when fleet model is created
     # fleet: Mapped["Fleet"] = relationship("Fleet", foreign_keys=[fleet_id])
     document: Mapped["Document"] = relationship("Document", foreign_keys=[document_id])
+
