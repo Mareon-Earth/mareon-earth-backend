@@ -5,9 +5,10 @@ from app.core.settings.app import AppSettings
 from app.core.settings.auth import AuthSettings
 from app.core.settings.db import DatabaseSettings
 from app.core.settings.log import LogSettings
+from app.core.settings.storage import StorageSettings
 
 
-class Settings(AppSettings, AuthSettings, DatabaseSettings, LogSettings, BaseSettings):
+class Settings(AppSettings, AuthSettings, DatabaseSettings, LogSettings, StorageSettings, BaseSettings):
     """
     Main Settings class that combines all modular settings.
     This keeps the codebase clean while maintaining a single entry point for config.
