@@ -1,8 +1,6 @@
 from app.domain.document.models import (
     Document,
     DocumentFile,
-    VesselDocument,
-    FleetDocument,
     DocumentType,
     DocumentContentType,
     ProcessingStatus,

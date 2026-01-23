@@ -147,50 +147,50 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
     organization: Mapped["Organization"] = relationship("Organization", foreign_keys=[org_id])
 
     
-class VesselDocument(CreatedAtMixin, Base):
-    __tablename__ = "vessel_document"
+# class VesselDocument(CreatedAtMixin, Base):
+#     __tablename__ = "vessel_document"
 
-    vessel_id: Mapped[str] = mapped_column(
-        String,
-        ForeignKey("vessel.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    document_id: Mapped[str] = mapped_column(
-        String,
-        ForeignKey("document.id", ondelete="CASCADE"),
-        nullable=False,
-    )
+#     vessel_id: Mapped[str] = mapped_column(
+#         String,
+#         ForeignKey("vessel.id", ondelete="CASCADE"),
+#         nullable=False,
+#     )
+#     document_id: Mapped[str] = mapped_column(
+#         String,
+#         ForeignKey("document.id", ondelete="CASCADE"),
+#         nullable=False,
+#     )
 
-    __table_args__ = (
-        PrimaryKeyConstraint("vessel_id", "document_id"),
-        Index("ix_vessel_document_document_id", "document_id"),
-    )
+#     __table_args__ = (
+#         PrimaryKeyConstraint("vessel_id", "document_id"),
+#         Index("ix_vessel_document_document_id", "document_id"),
+#     )
 
-    # Relationships will be added when vessel model is created
-    # vessel: Mapped["Vessel"] = relationship("Vessel", foreign_keys=[vessel_id])
-    document: Mapped["Document"] = relationship("Document", foreign_keys=[document_id])
+#     # Relationships will be added when vessel model is created
+#     # vessel: Mapped["Vessel"] = relationship("Vessel", foreign_keys=[vessel_id])
+#     document: Mapped["Document"] = relationship("Document", foreign_keys=[document_id])
 
 
-class FleetDocument(CreatedAtMixin, Base):
-    __tablename__ = "fleet_document"
+# class FleetDocument(CreatedAtMixin, Base):
+#     __tablename__ = "fleet_document"
 
-    fleet_id: Mapped[str] = mapped_column(
-        String,
-        ForeignKey("fleet.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    document_id: Mapped[str] = mapped_column(
-        String,
-        ForeignKey("document.id", ondelete="CASCADE"),
-        nullable=False,
-    )
+#     fleet_id: Mapped[str] = mapped_column(
+#         String,
+#         ForeignKey("fleet.id", ondelete="CASCADE"),
+#         nullable=False,
+#     )
+#     document_id: Mapped[str] = mapped_column(
+#         String,
+#         ForeignKey("document.id", ondelete="CASCADE"),
+#         nullable=False,
+#     )
 
-    __table_args__ = (
-        PrimaryKeyConstraint("fleet_id", "document_id"),
-        Index("ix_fleet_document_document_id", "document_id"),
-    )
+#     __table_args__ = (
+#         PrimaryKeyConstraint("fleet_id", "document_id"),
+#         Index("ix_fleet_document_document_id", "document_id"),
+#     )
 
-    # Relationships will be added when fleet model is created
-    # fleet: Mapped["Fleet"] = relationship("Fleet", foreign_keys=[fleet_id])
-    document: Mapped["Document"] = relationship("Document", foreign_keys=[document_id])
+#     # Relationships will be added when fleet model is created
+#     # fleet: Mapped["Fleet"] = relationship("Fleet", foreign_keys=[fleet_id])
+#     document: Mapped["Document"] = relationship("Document", foreign_keys=[document_id])
 

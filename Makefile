@@ -26,7 +26,7 @@ db-rebuild:
 	docker-compose down -v
 	docker-compose up -d db
 
-bootstrap: install db-up migrates
+bootstrap: install db-up migrate
 	@echo "✅ Bootstrapped. Run: make dev"
 
 install:
