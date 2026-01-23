@@ -109,13 +109,6 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
     mime_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     file_size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
-    # Canonical type your app uses for parsing/routing
-    content_type: Mapped["DocumentContentType"] = mapped_column(
-        SAEnum(DocumentContentType, name="document_content_type", native_enum=False),
-        nullable=False,
-        server_default=text(f"'{DocumentContentType.OTHER.value}'"),
-    )
-
     # GCS md5Hash (base64)
     content_md5_b64: Mapped[str | None] = mapped_column(Text, nullable=True)
 

@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 if TYPE_CHECKING:
     from app.domain.users.models import User
     from app.domain.users.schemas import UserCreate, UserUpdate
+    from app.domain.document.schemas import InitiateDocumentUploadRequest, InitiateDocumentUploadResponse
 
 class UserServiceProtocol(Protocol):
     async def create_user(self, db: AsyncSession, payload: "UserCreate") -> "User": ...
@@ -11,3 +12,11 @@ class UserServiceProtocol(Protocol):
     async def get_user_by_clerk_id(self, db: AsyncSession, clerk_user_id: str) -> "User": ...
     async def update_user(self, db: AsyncSession, clerk_user_id: str, payload: "UserUpdate") -> "User": ...
     async def delete_user(self, db: AsyncSession, clerk_user_id: str) -> None: ...
+
+class DocumentServiceProtocol(Protocol):
+    async def initiate_document_upload(
+        self,
+        db: AsyncSession,
+        payload: "InitiateDocumentUploadRequest",
+    ) -> "InitiateDocumentUploadResponse":
+        ...
