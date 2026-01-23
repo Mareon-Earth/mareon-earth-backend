@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import api_router
 from app.core.config import get_settings
@@ -9,27 +11,29 @@ from app.infrastructure.db import database_lifespan
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Application lifespan manager.
-
-    Handles startup and shutdown events:
-    - Ensures database connections are properly closed
-    - Cleans up Cloud SQL Connector resources
-    - Can be extended for other resource management
-    """
-    # Startup
     async with database_lifespan():
         yield
 
 
 def create_app() -> FastAPI:
-    # Ensure env is loaded + validated at startup
     settings = get_settings()
 
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
-        lifespan=lifespan,  # Added lifespan manager
+        lifespan=lifespan,
+    )
+
+    # ✅ CORS (must be added BEFORE routers)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "https://mareon.app",
+            "https://accounts.mareon.app",  # helps during auth flows
+        ],
+        allow_credentials=False,  # set True ONLY if you're using cookies
+        allow_methods=["*"],      # includes OPTIONS preflight
+        allow_headers=["*"],      # includes Authorization, Content-Type, etc.
     )
 
     # Routers
