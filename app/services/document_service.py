@@ -11,7 +11,7 @@ from app.domain.document import (
     InitiateDocumentUploadResponse,
     DocumentNotFoundError,
 )
-from app.domain.protocols.repositories import DocumentRepositoryProtocol
+from app.domain.protocols.repositories import DocumentRepositoryProtocol, UserRepositoryProtocol, OrganizationRepositoryProtocol
 from app.domain.protocols.services import DocumentServiceProtocol
 from app.infrastructure.storage import StorageClient
 
@@ -22,10 +22,14 @@ class DocumentService(DocumentServiceProtocol):
         *,
         storage: StorageClient,
         repo: DocumentRepositoryProtocol,
+        userRepo: UserRepositoryProtocol,
+        orgRepo: OrganizationRepositoryProtocol,
         ctx: AuthContext,
     ):
         self._storage = storage
         self._repo = repo
+        self._userRepo = userRepo
+        self._orgRepo = orgRepo
         self._ctx = ctx
 
     async def initiate_document_upload(
@@ -33,8 +37,15 @@ class DocumentService(DocumentServiceProtocol):
         db: AsyncSession,
         payload: InitiateDocumentUploadRequest,
     ) -> InitiateDocumentUploadResponse:
-        org_id = self._ctx.internal_org_id
-        user_id = self._ctx.internal_user_id
+        org = await self._orgRepo.get_by_clerk_id(db=db, clerk_id=self._ctx.organization_id)
+        if not org:
+            raise DocumentNotFoundError()
+        org_id = org.id
+
+        user = await self._userRepo.get_by_clerk_id(db=db, clerk_user_id=self._ctx.user_id)
+        if not user:
+            raise DocumentNotFoundError()
+        user_id = user.id
 
         if payload.document_id:
             doc = await self._repo.getDocumentById(db=db, document_id=payload.document_id)
