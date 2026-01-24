@@ -37,6 +37,7 @@ class DocumentService(DocumentServiceProtocol):
         db: AsyncSession,
         payload: InitiateDocumentUploadRequest,
     ) -> InitiateDocumentUploadResponse:
+        # TODO: Clean up and optimize this method
         org = await self._orgRepo.get_by_clerk_id(db=db, clerk_id=self._ctx.organization_id)
         if not org:
             raise DocumentNotFoundError()
