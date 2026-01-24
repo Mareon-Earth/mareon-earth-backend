@@ -2,9 +2,8 @@ from typing import Protocol, Optional, TYPE_CHECKING
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
-    from app.domain.users.models import User
-    from app.domain.users.schemas import UserCreate, UserUpdate
-    from app.domain.document.schemas import InitiateDocumentUploadRequest, InitiateDocumentUploadResponse
+    from app.domain.users import User, UserCreate, UserUpdate
+    from app.domain.document import InitiateDocumentUploadRequest, InitiateDocumentUploadResponse
 
 class UserServiceProtocol(Protocol):
     async def create_user(self, db: AsyncSession, payload: "UserCreate") -> "User": ...

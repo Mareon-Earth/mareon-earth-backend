@@ -9,10 +9,8 @@ if TYPE_CHECKING:
         OrganizationMemberCreate,
         OrganizationMemberUpdate,
     )
-    from app.domain.users.models import User
-    from app.domain.users.schemas import UserCreate, UserUpdate
-    from app.domain.document.models import Document
-    from app.domain.document.models import DocumentFile
+    from app.domain.users import User, UserCreate, UserUpdate
+    from app.domain.document import Document, DocumentFile
 
 class UserRepositoryProtocol(Protocol):
     async def get_by_clerk_id(self, db: AsyncSession, clerk_user_id: str) -> Optional["User"]: ...

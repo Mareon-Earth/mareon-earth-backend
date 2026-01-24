@@ -1,8 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.users.models import User
-from app.domain.users.schemas import UserCreate, UserUpdate
+from app.domain.users import User, UserCreate, UserUpdate
 
 from app.domain.protocols.repositories import UserRepositoryProtocol
 from typing import Optional

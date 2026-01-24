@@ -21,7 +21,7 @@ from app.infrastructure.db.sa import (
 )
 from app.infrastructure.db.mixins import UUIDPrimaryKeyMixin, TimestampsMixin, CreatedAtMixin
 from app.domain.organization.models import Organization
-from app.domain.users.models import User
+from app.domain.users import User
 
 class DocumentContentType(str, enum.Enum):
     PDF = "PDF"
