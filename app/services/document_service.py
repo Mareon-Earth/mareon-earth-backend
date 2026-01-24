@@ -33,8 +33,8 @@ class DocumentService(DocumentServiceProtocol):
         db: AsyncSession,
         payload: InitiateDocumentUploadRequest,
     ) -> InitiateDocumentUploadResponse:
-        org_id = self._ctx.organization_id
-        user_id = self._ctx.user_id
+        org_id = self._ctx.internal_org_id
+        user_id = self._ctx.internal_user_id
 
         if payload.document_id:
             doc = await self._repo.getDocumentById(db=db, document_id=payload.document_id)
