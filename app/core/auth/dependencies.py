@@ -24,11 +24,19 @@ async def get_auth_context(request: Request) -> AuthContext:
     if payload.get("sts") == "pending":
         raise PendingOrganizationError()
 
+    # Extract internal IDs from metadata
+    internal_user_id = payload.get("public_metadata", {}).get("user_id")
+    
+    # Organization's internal ID is in org_public_metadata
+    internal_org_id = payload.get("org_public_metadata", {}).get("org_id")
+
     return AuthContext(
         user_id=user_id,
         organization_id=org_id,
         organization_role=payload.get("org_role"),
         session_id=payload.get("sid"),
+        internal_user_id=internal_user_id,
+        internal_org_id=internal_org_id,
     )
 
 

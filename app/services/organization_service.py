@@ -1,5 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
+import asyncio
+import logging
 
 from app.domain.organization.models import Organization, OrganizationRole
 from app.domain.organization.schemas import OrganizationCreate, OrganizationUpdate
@@ -9,6 +11,9 @@ from app.domain.organization.repository import (
 )
 from app.domain.organization.exceptions import OrganizationNotFoundError, OrganizationMemberNotFoundError
 from app.domain.organization.schemas import OrganizationMemberCreate, OrganizationMemberUpdate
+from app.core.auth.client import update_organization_metadata
+
+logger = logging.getLogger(__name__)
 
 
 class OrganizationService:
@@ -26,6 +31,10 @@ class OrganizationService:
         org = await self.org_repo.create(db, payload)
         await db.commit()
         await db.refresh(org)
+        
+        # Sync org_id back to Clerk organization metadata
+        await self._sync_org_metadata_to_clerk(org)
+        
         return org
 
     async def get_organization(self, db: AsyncSession, clerk_id: str) -> Organization:
@@ -58,10 +67,8 @@ class OrganizationService:
         self, db: AsyncSession, user_id: str, org_id: str, role: OrganizationRole
     ) -> None:
         """Add a user to an organization with specified role, or update role if already a member."""
-        # Check if membership already exists
         existing = await self.member_repo.get_by_user_and_org(db, user_id, org_id)
         if existing:
-            # Update role if it changed
             if existing.role != role:
                 await self.member_repo.update(
                     db, existing, OrganizationMemberUpdate(role=role)
@@ -69,7 +76,6 @@ class OrganizationService:
                 await db.commit()
             return
 
-        # Create new membership
         payload = OrganizationMemberCreate(user_id=user_id, org_id=org_id, role=role)
         await self.member_repo.create(db, payload)
         await db.commit()
@@ -93,3 +99,26 @@ class OrganizationService:
 
         await self.member_repo.delete(db, member)
         await db.commit()
+
+    async def _sync_org_metadata_to_clerk(self, org: Organization) -> None:
+        """
+        Sync organization metadata back to Clerk as public metadata (available in JWT).
+        This makes the internal org_id available in the JWT under org_public_metadata.
+        """
+        try:
+            public_metadata = {
+                "org_id": str(org.id),
+            }
+            
+            await update_organization_metadata(
+                org.clerk_id,
+                public_metadata=public_metadata
+            )
+            
+            logger.info(f"Successfully synced org metadata to Clerk for org {org.clerk_id}")
+        except Exception as e:
+            logger.error(
+                f"Failed to sync org metadata to Clerk for org {org.clerk_id}: {e}", 
+                exc_info=True
+            )
+            # Don't raise - we don't want to fail org creation if Clerk sync fails

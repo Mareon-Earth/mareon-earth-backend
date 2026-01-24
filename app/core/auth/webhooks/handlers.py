@@ -26,6 +26,7 @@ class WebhookHandlers:
         """
         Handle user.created event.
         Creates local user record synced with Clerk.
+        The service will automatically sync the internal user_id back to Clerk metadata.
         """
         try:
             payload = UserCreate(
@@ -79,6 +80,7 @@ class WebhookHandlers:
         """
         Handle organization.created event.
         Creates local organization record synced with Clerk.
+        The service will automatically sync the internal org_id back to Clerk metadata.
         """
         try:
             payload = OrganizationCreate(
@@ -129,6 +131,7 @@ class WebhookHandlers:
         """
         Handle organizationMembership.created event.
         Adds user to organization with appropriate role.
+        Both user and org will have their internal IDs synced to Clerk if newly created.
         """
         try:
             # Map Clerk roles to internal OrgRole enum
@@ -136,6 +139,7 @@ class WebhookHandlers:
             role = WebhookHandlers._map_clerk_role(clerk_role)
 
             # Ensure user exists (get or create from webhook data)
+            # This will sync user_id to Clerk if newly created
             user_payload = UserCreate(
                 clerk_user_id=data["public_user_data"]["user_id"],
                 email=data["public_user_data"].get("identifier", ""),
@@ -146,6 +150,7 @@ class WebhookHandlers:
             user = await user_service.get_or_create_from_clerk(db, user_payload)
 
             # Ensure organization exists (get or create from webhook data)
+            # This will sync org_id to Clerk if newly created
             org_payload = OrganizationCreate(
                 clerk_id=data["organization"]["id"],
                 name=data["organization"]["name"],

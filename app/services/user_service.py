@@ -1,10 +1,12 @@
 from app.domain.protocols.services import UserServiceProtocol
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
-from app.domain.users.models import User
-from app.domain.users.schemas import UserCreate, UserUpdate
+from app.domain.users import User, UserCreate, UserUpdate, UserNotFoundError, UserAlreadyExistsError
 from app.domain.protocols.repositories import UserRepositoryProtocol
-from app.domain.users.exceptions import UserNotFoundError, UserAlreadyExistsError
+from app.core.auth.client import update_user_metadata
+
+logger = logging.getLogger(__name__)
 
 
 class UserService(UserServiceProtocol):
@@ -23,6 +25,10 @@ class UserService(UserServiceProtocol):
         user = await self.user_repository.create(db, payload)
         await db.commit()
         await db.refresh(user)
+        
+        # Sync user_id back to Clerk user metadata
+        await self._sync_user_metadata_to_clerk(user)
+        
         return user
 
     async def create_user(self, db: AsyncSession, payload: UserCreate) -> User:
@@ -38,6 +44,10 @@ class UserService(UserServiceProtocol):
         user = await self.user_repository.create(db, payload)
         await db.commit()
         await db.refresh(user)
+        
+        # Sync user_id back to Clerk user metadata
+        await self._sync_user_metadata_to_clerk(user)
+        
         return user
 
     async def get_user(self, db: AsyncSession, user_id: str) -> User:
@@ -81,3 +91,26 @@ class UserService(UserServiceProtocol):
 
         await self.user_repository.delete(db, user)
         await db.commit()
+
+    async def _sync_user_metadata_to_clerk(self, user: User) -> None:
+        """
+        Sync user metadata back to Clerk as public metadata (available in JWT).
+        This makes the internal user_id available in the JWT under public_metadata.
+        """
+        try:
+            public_metadata = {
+                "user_id": str(user.id),
+            }
+            
+            await update_user_metadata(
+                user.clerk_user_id,
+                public_metadata=public_metadata
+            )
+            
+            logger.info(f"Successfully synced user metadata to Clerk for user {user.clerk_user_id}")
+        except Exception as e:
+            logger.error(
+                f"Failed to sync user metadata to Clerk for user {user.clerk_user_id}: {e}", 
+                exc_info=True
+            )
+            # Don't raise - we don't want to fail user creation if Clerk sync fails
