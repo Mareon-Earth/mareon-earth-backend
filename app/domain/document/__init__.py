@@ -1,11 +1,18 @@
 from app.domain.document.models import (
     Document,
     DocumentFile,
+)
+from app.domain.document.enums import (
     DocumentType,
     DocumentContentType,
     ProcessingStatus,
 )
-from app.domain.document.repository import DocumentRepository
+from app.domain.document.repository import (
+    DocumentRepository,
+    DocumentFileRepository,
+    DocumentRepositoryProtocol,
+    DocumentFileRepositoryProtocol,)
+
 from app.domain.document.exceptions import (
     DocumentNotFoundError,
     DocumentFileNotFoundError,
@@ -22,14 +29,15 @@ __all__ = [
     # Models
     "Document",
     "DocumentFile",
-    "VesselDocument",
-    "FleetDocument",
+    "DocumentRepositoryProtocol",
+    "DocumentFileRepositoryProtocol",
     # Enums
     "DocumentType",
     "DocumentContentType",
     "ProcessingStatus",
     # Repository
     "DocumentRepository",
+    "DocumentFileRepository",
     # Exceptions
     "DocumentNotFoundError",
     "DocumentFileNotFoundError",

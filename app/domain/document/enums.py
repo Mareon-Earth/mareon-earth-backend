@@ -1,0 +1,34 @@
+from __future__ import annotations
+
+from enum import Enum
+
+
+class DocumentContentType(str, Enum):
+    PDF = "PDF"
+    IMAGE = "IMAGE"
+    DOCX = "DOCX"
+    XLSX = "XLSX"
+    CSV = "CSV"
+    PPTX = "PPTX"
+    TXT = "TXT"
+    OTHER = "OTHER"
+
+
+class DocumentType(str, Enum):
+    CLASS_STATUS_REPORT = "CLASS_STATUS_REPORT"
+    GA_PLAN = "GA_PLAN"
+    MACHINERY_LIST = "MACHINERY_LIST"
+    SURVEY_REPORT = "SURVEY_REPORT"
+    CERTIFICATE = "CERTIFICATE"
+    OTHER = "OTHER"
+
+
+class ProcessingStatus(str, Enum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    UNSUPPORTED = "UNSUPPORTED"
+
+
+__all__ = ["DocumentContentType", "DocumentType", "ProcessingStatus"]

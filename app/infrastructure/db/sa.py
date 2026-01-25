@@ -24,6 +24,9 @@ from sqlalchemy import (
     Index,
     text,
 )
+
+import enum as Enum
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 __all__ = [
@@ -51,4 +54,5 @@ __all__ = [
     "Mapped",
     "mapped_column",
     "relationship",
+    "Enum",
 ]
