@@ -11,8 +11,9 @@ from app.domain.document.repository import (
     DocumentRepository,
     DocumentFileRepository,
     DocumentRepositoryProtocol,
-    DocumentFileRepositoryProtocol,)
-
+    DocumentFileRepositoryProtocol,
+)
+from app.domain.document.service import DocumentServiceProtocol
 from app.domain.document.exceptions import (
     DocumentNotFoundError,
     DocumentFileNotFoundError,
@@ -29,13 +30,16 @@ __all__ = [
     # Models
     "Document",
     "DocumentFile",
+    # Repo protocols
     "DocumentRepositoryProtocol",
     "DocumentFileRepositoryProtocol",
+    # Service protocol
+    "DocumentServiceProtocol",
     # Enums
     "DocumentType",
     "DocumentContentType",
     "ProcessingStatus",
-    # Repository
+    # Repository impls
     "DocumentRepository",
     "DocumentFileRepository",
     # Exceptions

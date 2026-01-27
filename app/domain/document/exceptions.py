@@ -1,28 +1,26 @@
-from fastapi import status
-from app.core.exceptions.base import MareonError
+from app.domain._shared.errors import Conflict, NotFound, DomainError
 
 
-class DocumentNotFoundError(MareonError):
-    message = "Document not found."
+class DocumentNotFoundError(NotFound):
     code = "DOCUMENT_NOT_FOUND"
-    status_code = status.HTTP_404_NOT_FOUND
+    message = "Document not found."
 
-class DocumentFileNotFoundError(MareonError):
-    message = "Document file not found."
+
+class DocumentFileNotFoundError(NotFound):
     code = "DOCUMENT_FILE_NOT_FOUND"
-    status_code = status.HTTP_404_NOT_FOUND
+    message = "Document file not found."
 
-class DocumentAlreadyExistsError(MareonError):
-    message = "Document already exists."
+
+class DocumentAlreadyExistsError(Conflict):
     code = "DOCUMENT_ALREADY_EXISTS"
-    status_code = status.HTTP_409_CONFLICT
+    message = "Document already exists."
 
-class DocumentFileProcessingError(MareonError):
-    message = "Error processing document file."
+
+class DocumentFileProcessingError(DomainError):
     code = "DOCUMENT_FILE_PROCESSING_ERROR"
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    message = "Error processing document file."
 
-class InvalidDocumentFileError(MareonError):
-    message = "Invalid document file."
+
+class InvalidDocumentFileError(DomainError):
     code = "INVALID_DOCUMENT_FILE"
-    status_code = status.HTTP_400_BAD_REQUEST
+    message = "Invalid document file."
