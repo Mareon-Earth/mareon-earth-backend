@@ -46,8 +46,7 @@ class OrganizationService(OrganizationServiceProtocol):
             org = Organization(
                 clerk_id=payload.clerk_id,
                 name=payload.name,
-                slug=payload.slug,
-                image_url=payload.image_url,
+                logo_url=payload.logo_url,
             )
             await self._organizations.create(org)
             await self._db.commit()
@@ -106,9 +105,7 @@ class OrganizationService(OrganizationServiceProtocol):
             if not org:
                 raise OrganizationNotFoundError()
 
-            existing_member = await self._org_members.get_by_user_and_org(
-                user_id, organization_id
-            )
+            existing_member = await self._org_members.get_by_id((user_id, organization_id))
             if existing_member:
                 raise OrganizationMemberAlreadyExistsError()
 
@@ -127,13 +124,11 @@ class OrganizationService(OrganizationServiceProtocol):
         self, organization_id: str, user_id: str
     ) -> None:
         try:
-            member = await self._org_members.get_by_user_and_org(
-                user_id, organization_id
-            )
+            member = await self._org_members.get_by_id((user_id, organization_id))
             if not member:
                 raise OrganizationMemberNotFoundError()
 
-            await self._org_members.delete(member.id)
+            await self._org_members.delete((user_id, organization_id))
             await self._db.commit()
         except Exception:
             await self._db.rollback()
@@ -143,9 +138,7 @@ class OrganizationService(OrganizationServiceProtocol):
         self, organization_id: str, user_id: str, new_role: str
     ) -> None:
         try:
-            member = await self._org_members.get_by_user_and_org(
-                user_id, organization_id
-            )
+            member = await self._org_members.get_by_id((user_id, organization_id))
             if not member:
                 raise OrganizationMemberNotFoundError()
 

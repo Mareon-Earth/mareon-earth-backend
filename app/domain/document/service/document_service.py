@@ -19,9 +19,7 @@ from app.domain.document.repository import (
 )
 from app.domain.document.service.protocols import DocumentServiceProtocol
 from app.domain.users.repository.protocols import UserRepositoryProtocol
-from app.domain.protocols.repositories import (
-    OrganizationRepositoryProtocol,
-)
+from app.domain.organization.repository.protocols import OrganizationRepositoryProtocol
 from app.infrastructure.storage import StorageClient
 
 

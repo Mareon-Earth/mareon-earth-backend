@@ -1,12 +1,5 @@
-from app.domain.document.models import (
-    Document,
-    DocumentFile,
-)
-from app.domain.document.enums import (
-    DocumentType,
-    DocumentContentType,
-    ProcessingStatus,
-)
+from app.domain.document.models import Document, DocumentFile
+from app.domain.document.enums import DocumentType, DocumentContentType, ProcessingStatus
 from app.domain.document.repository import (
     DocumentRepository,
     DocumentFileRepository,
@@ -25,30 +18,25 @@ from app.domain.document.schemas import (
     InitiateDocumentUploadRequest,
     InitiateDocumentUploadResponse,
 )
+from app.domain.document.dependencies import build_document_service
 
 __all__ = [
-    # Models
     "Document",
     "DocumentFile",
-    # Repo protocols
     "DocumentRepositoryProtocol",
     "DocumentFileRepositoryProtocol",
-    # Service protocol
     "DocumentServiceProtocol",
-    # Enums
     "DocumentType",
     "DocumentContentType",
     "ProcessingStatus",
-    # Repository impls
     "DocumentRepository",
     "DocumentFileRepository",
-    # Exceptions
     "DocumentNotFoundError",
     "DocumentFileNotFoundError",
     "DocumentAlreadyExistsError",
     "DocumentFileProcessingError",
     "InvalidDocumentFileError",
-    # Schemas
     "InitiateDocumentUploadRequest",
     "InitiateDocumentUploadResponse",
+    "build_document_service",
 ]

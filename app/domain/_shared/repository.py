@@ -15,3 +15,17 @@ class BaseRepository(ABC, Generic[TEntity, TId]):
 
     @abstractmethod
     async def delete(self, id: TId) -> None: ...
+
+
+TCompositeId = TypeVar("TCompositeId", bound=tuple)
+
+
+class CompositeKeyRepository(ABC, Generic[TEntity, TCompositeId]):
+    @abstractmethod
+    async def create(self, entity: TEntity) -> TEntity: ...
+
+    @abstractmethod
+    async def get_by_id(self, id: TCompositeId) -> TEntity | None: ...
+
+    @abstractmethod
+    async def delete(self, id: TCompositeId) -> None: ...
