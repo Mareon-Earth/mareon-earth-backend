@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.document.models import Document
 from app.domain.document.repository.protocols import DocumentRepositoryProtocol
+from app.domain._shared.types import DocumentId
 
 class DocumentRepository(DocumentRepositoryProtocol):
     def __init__(self, db: AsyncSession):
@@ -14,10 +15,10 @@ class DocumentRepository(DocumentRepositoryProtocol):
         await self._db.flush()
         return entity
 
-    async def get_by_id(self, id: str) -> Document | None:
+    async def get_by_id(self, id: DocumentId) -> Document | None:
         return await self._db.get(Document, id)
 
-    async def delete(self, id: str) -> None:
+    async def delete(self, id: DocumentId) -> None:
         doc = await self.get_by_id(id)
         if doc is not None:
             await self._db.delete(doc)

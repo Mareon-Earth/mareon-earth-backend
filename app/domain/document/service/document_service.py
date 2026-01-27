@@ -63,9 +63,7 @@ class DocumentService(DocumentServiceProtocol):
             org_id = self._ctx.internal_org_id
             if not org_id:
                 org = await self._orgs.get_by_clerk_id(
-                    db=self._db,
-                    clerk_id=self._ctx.organization_id,
-                )
+                    clerk_org_id=self._ctx.organization_id,)
                 if not org:
                     # TODO: replace with an org-specific error once DomainError handler exists
                     raise DocumentNotFoundError()

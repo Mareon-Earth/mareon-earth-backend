@@ -123,28 +123,9 @@ class OrganizationService(OrganizationServiceProtocol):
     async def remove_member_from_organization(
         self, organization_id: str, user_id: str
     ) -> None:
-        try:
-            member = await self._org_members.get_by_id((user_id, organization_id))
-            if not member:
-                raise OrganizationMemberNotFoundError()
-
-            await self._org_members.delete((user_id, organization_id))
-            await self._db.commit()
-        except Exception:
-            await self._db.rollback()
-            raise
+        raise NotImplementedError()
 
     async def update_organization_member_role(
         self, organization_id: str, user_id: str, new_role: str
     ) -> None:
-        try:
-            member = await self._org_members.get_by_id((user_id, organization_id))
-            if not member:
-                raise OrganizationMemberNotFoundError()
-
-            member.role = new_role
-            await self._org_members.update(member)
-            await self._db.commit()
-        except Exception:
-            await self._db.rollback()
-            raise
+        raise NotImplementedError()
