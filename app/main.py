@@ -29,7 +29,6 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=[
             "http://localhost:3000",
-            "127.0.0.1:53971"
             "https://mareon.app",
             "https://accounts.mareon.app",  # helps during auth flows
         ],
