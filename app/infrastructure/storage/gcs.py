@@ -84,6 +84,7 @@ class GCSStorage:
         self,
         path: str,
         content_type: str,
+        content_md5: str | None = None,
         expiration: timedelta = timedelta(hours=1),
     ) -> str:
         try:
@@ -95,6 +96,7 @@ class GCSStorage:
                 version="v4",
                 expiration=expiration,
                 method="PUT",
+                content_md5=content_md5,
                 content_type=content_type,
                 service_account_email=self._SIGNER_SERVICE_ACCOUNT_EMAIL,
                 access_token=access_token,

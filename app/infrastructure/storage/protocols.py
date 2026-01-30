@@ -15,6 +15,7 @@ class StorageProtocol(Protocol):
         self,
         path: str,
         content_type: str,
+        content_md5: str,
         expiration: timedelta = timedelta(hours=1)) -> str:
         """Generate a signed URL for uploading a file."""
         ...

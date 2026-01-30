@@ -9,6 +9,7 @@ from app.domain.document import (
     Document,
     DocumentFile,
     DocumentType,
+    ParsingStatus,
     InitiateDocumentUploadRequest,
     InitiateDocumentUploadResponse,
     DocumentNotFoundError,
@@ -86,10 +87,10 @@ class DocumentService(DocumentServiceProtocol):
                     raise DocumentNotFoundError()
             else:
                 doc = Document(
-                    org_id=org_id,
-                    created_by=user_id,
-                    title="Untitled Document",
-                    document_type=DocumentType.OTHER,
+                    org_id = org_id,
+                    title = payload.document_title or "Untitled Document",
+                    document_type = payload.document_type or DocumentType.OTHER,
+                    created_by = user_id,
                 )
                 await self._documents.create(doc)
 
@@ -98,12 +99,14 @@ class DocumentService(DocumentServiceProtocol):
             # 2) Create file row (need flush to get file id for storage_path)
             doc_file = DocumentFile(
                 document_id=document_id,
-                org_id=org_id,
-                storage_path="pending",  # placeholder until we can compute deterministic path
-                original_name=payload.original_name,
-                mime_type=payload.mime_type,
+                org_id = org_id,
+                storage_path = "pending",  # placeholder until we can compute deterministic path
+                original_name=payload.original_name or "Untitled",
+                mime_type=payload.mime_type or "application/octet-stream",
                 file_size_bytes=payload.file_size_bytes,
+                content_md5_b64=payload.content_md5_b64 or None,
                 uploaded_by=user_id,
+                parsing_status=ParsingStatus.SKIPPED if payload.skip_parsing else ParsingStatus.PENDING
             )
             await self._files.create(doc_file)
 
@@ -118,6 +121,7 @@ class DocumentService(DocumentServiceProtocol):
             upload_url = await self._storage.generate_upload_url(
                 path=storage_path,
                 content_type=content_type,
+                content_md5=payload.content_md5_b64,
                 expiration=timedelta(hours=1),
             )
 
@@ -127,7 +131,10 @@ class DocumentService(DocumentServiceProtocol):
             return InitiateDocumentUploadResponse(
                 upload_url=upload_url,
                 method="PUT",
-                required_headers={"Content-Type": content_type},
+                required_headers={
+                    "Content-Type": payload.mime_type,
+                    "Content-MD5": payload.content_md5_b64,
+                    },
                 document_id=document_id,
                 document_file_id=document_file_id,
                 storage_path=storage_path,

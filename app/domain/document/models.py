@@ -27,6 +27,7 @@ class Document(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
     document_type: sa.Mapped[DocumentType] = sa.mapped_column(
         sa.SAEnum(DocumentType, name="document_type", native_enum=False),
         nullable=False,
+        server_default=sa.text(f"'{DocumentType.OTHER.value}'"),
     )
 
     description: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
@@ -66,7 +67,7 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
     original_name: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
     mime_type: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
     file_size_bytes: sa.Mapped[int | None] = sa.mapped_column(sa.BigInteger, nullable=True)
-    content_md5_b64: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
+    content_md5_b64: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=False)
 
     version_number: sa.Mapped[int] = sa.mapped_column(
         nullable=False,
@@ -101,7 +102,7 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         nullable=True,
     )
 
-    parsing_errors: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
+    parsing_errors: sa.Mapped[dict | None] = sa.mapped_column(sa.JSONB, nullable=True)
 
     parsed_suggestions: sa.Mapped[dict | None] = sa.mapped_column(sa.JSONB, nullable=True)
 
@@ -112,6 +113,7 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         sa.Index("ix_document_file_parsing_status", "parsing_status"),
         sa.Index("ix_document_file_is_latest", "is_latest"),
         sa.Index("ix_document_file_parsed_suggestions", "parsed_suggestions"),
+        sa.Index("ix_document_file_parsing_errors", "parsing_errors"),
     )
 
     document: sa.Mapped["Document"] = sa.relationship("Document", foreign_keys=[document_id])

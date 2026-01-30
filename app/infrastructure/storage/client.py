@@ -27,9 +27,9 @@ class StorageClient:
         """Generate a signed URL for reading a file."""
         return await self._storage.generate_signed_url(path, **kwargs)
     
-    async def generate_upload_url(self, path: str, content_type: str, **kwargs) -> str:
+    async def generate_upload_url(self, path: str, content_type: str, content_md5: str, **kwargs) -> str:
         """Generate a signed URL for uploading a file."""
-        return await self._storage.generate_upload_url(path, content_type, **kwargs)
+        return await self._storage.generate_upload_url(path, content_type, content_md5, **kwargs)
     
     async def delete_file(self, path: str) -> bool:
         """Delete a file from storage."""
