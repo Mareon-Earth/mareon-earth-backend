@@ -1,5 +1,5 @@
 from app.domain.document.models import Document, DocumentFile
-from app.domain.document.enums import DocumentType, DocumentContentType, ProcessingStatus
+from app.domain.document.enums import DocumentType, DocumentContentType, ParsingStatus
 from app.domain.document.repository import (
     DocumentRepository,
     DocumentFileRepository,
@@ -27,7 +27,7 @@ __all__ = [
     "DocumentServiceProtocol",
     "DocumentType",
     "DocumentContentType",
-    "ProcessingStatus",
+    "ParsingStatus",
     "DocumentRepository",
     "DocumentFileRepository",
     "DocumentNotFoundError",

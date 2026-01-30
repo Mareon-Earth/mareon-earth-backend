@@ -6,7 +6,7 @@ from app.infrastructure.db import Base
 import app.infrastructure.db.sa as sa
 from app.infrastructure.db.mixins import UUIDPrimaryKeyMixin, TimestampsMixin
 
-from .enums import DocumentType, ProcessingStatus
+from .enums import DocumentType, ParsingStatus
 
 if TYPE_CHECKING:
     from app.domain.organization.models import Organization
@@ -64,11 +64,8 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
 
     storage_path: sa.Mapped[str] = sa.mapped_column(sa.Text, nullable=False)
     original_name: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
-
     mime_type: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
     file_size_bytes: sa.Mapped[int | None] = sa.mapped_column(sa.BigInteger, nullable=True)
-
-    # GCS md5Hash (base64)
     content_md5_b64: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
 
     version_number: sa.Mapped[int] = sa.mapped_column(
@@ -93,25 +90,28 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         server_default=sa.text("now()"),
     )
 
-    processing_status: sa.Mapped[ProcessingStatus] = sa.mapped_column(
-        sa.SAEnum(ProcessingStatus, name="processing_status", native_enum=False),
+    parsing_status: sa.Mapped[ParsingStatus] = sa.mapped_column(
+        sa.SAEnum(ParsingStatus, name="parsing_status", native_enum=False),
         nullable=False,
-        server_default=sa.text(f"'{ProcessingStatus.PENDING.value}'"),
+        server_default=sa.text(f"'{ParsingStatus.PENDING.value}'"),
     )
 
-    processed_at: sa.Mapped[sa.DateTime | None] = sa.mapped_column(
+    parsed_at: sa.Mapped[sa.DateTime | None] = sa.mapped_column(
         sa.DateTime(timezone=True),
         nullable=True,
     )
 
-    processing_errors: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
+    parsing_errors: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
+
+    parsed_suggestions: sa.Mapped[dict | None] = sa.mapped_column(sa.JSONB, nullable=True)
 
     __table_args__ = (
-        sa.UniqueConstraint("org_id", "content_md5_b64", name="uq_document_file_org_md5"),
+        sa.UniqueConstraint("document_id", "content_md5_b64", name="uq_document_file_doc_md5"),
         sa.Index("ix_document_file_document_id", "document_id"),
         sa.Index("ix_document_file_org_id", "org_id"),
-        sa.Index("ix_document_file_processing_status", "processing_status"),
+        sa.Index("ix_document_file_parsing_status", "parsing_status"),
         sa.Index("ix_document_file_is_latest", "is_latest"),
+        sa.Index("ix_document_file_parsed_suggestions", "parsed_suggestions"),
     )
 
     document: sa.Mapped["Document"] = sa.relationship("Document", foreign_keys=[document_id])
