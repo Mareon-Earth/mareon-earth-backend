@@ -1,5 +1,5 @@
-# app/api/v1/dependencies/__init__.py
-from app.dependencies.services import (
+from .storage import get_storage_client
+from .services import (
     get_user_service,
     get_authed_user_service,
     get_organization_service,
@@ -8,6 +8,7 @@ from app.dependencies.services import (
 )
 
 __all__ = [
+    "get_storage_client",
     "get_user_service",
     "get_authed_user_service",
     "get_organization_service",

@@ -3,10 +3,9 @@ from typing import Any, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.users.schemas import UserCreate, UserUpdate
-from app.domain.users.dependencies import build_user_service
+from app.dependencies.services import get_user_service, get_organization_service
 from app.domain.organization.schemas import OrganizationCreate, OrganizationUpdate
 from app.domain.organization.models import OrganizationRole
-from app.domain.organization.dependencies import build_organization_service
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ class WebhookHandlers:
     @staticmethod
     async def handle_user_created(db: AsyncSession, data: Dict[str, Any]) -> None:
         try:
-            user_svc = build_user_service(db=db)
+            user_svc = get_user_service(db=db)
             payload = UserCreate(
                 clerk_user_id=data["id"],
                 email=data["email_addresses"][0]["email_address"],
@@ -32,7 +31,7 @@ class WebhookHandlers:
     @staticmethod
     async def handle_user_updated(db: AsyncSession, data: Dict[str, Any]) -> None:
         try:
-            user_svc = build_user_service(db=db)
+            user_svc = get_user_service(db=db)
             payload = UserUpdate(
                 first_name=data.get("first_name"),
                 last_name=data.get("last_name"),
@@ -48,7 +47,7 @@ class WebhookHandlers:
     @staticmethod
     async def handle_user_deleted(db: AsyncSession, data: Dict[str, Any]) -> None:
         try:
-            user_svc = build_user_service(db=db)
+            user_svc = get_user_service(db=db)
             await user_svc.delete_user_by_clerk_id(data["id"])
             logger.info(f"User deleted: {data['id']}")
         except Exception as e:
@@ -58,7 +57,7 @@ class WebhookHandlers:
     @staticmethod
     async def handle_organization_created(db: AsyncSession, data: Dict[str, Any]) -> None:
         try:
-            org_svc = build_organization_service(db=db)
+            org_svc = get_organization_service(db=db)
             payload = OrganizationCreate(
                 clerk_id=data["id"],
                 name=data["name"],
@@ -73,7 +72,7 @@ class WebhookHandlers:
     @staticmethod
     async def handle_organization_updated(db: AsyncSession, data: Dict[str, Any]) -> None:
         try:
-            org_svc = build_organization_service(db=db)
+            org_svc = get_organization_service(db=db)
             org = await org_svc.get_organization_by_clerk_id(data["id"])
             payload = OrganizationUpdate(
                 name=data.get("name"),
@@ -88,7 +87,7 @@ class WebhookHandlers:
     @staticmethod
     async def handle_organization_deleted(db: AsyncSession, data: Dict[str, Any]) -> None:
         try:
-            org_svc = build_organization_service(db=db)
+            org_svc = get_organization_service(db=db)
             org = await org_svc.get_organization_by_clerk_id(data["id"])
             await org_svc.delete_organization(org.id)
             logger.info(f"Organization deleted: {data['id']}")
@@ -101,8 +100,8 @@ class WebhookHandlers:
         db: AsyncSession, data: Dict[str, Any]
     ) -> None:
         try:
-            user_svc = build_user_service(db=db)
-            org_svc = build_organization_service(db=db)
+            user_svc = get_user_service(db=db)
+            org_svc = get_organization_service(db=db)
 
             clerk_role = data.get("role", "basic_member")
             role = WebhookHandlers._map_clerk_role(clerk_role)
@@ -147,8 +146,8 @@ class WebhookHandlers:
         db: AsyncSession, data: Dict[str, Any]
     ) -> None:
         try:
-            user_svc = build_user_service(db=db)
-            org_svc = build_organization_service(db=db)
+            user_svc = get_user_service(db=db)
+            org_svc = get_organization_service(db=db)
 
             clerk_role = data.get("role", "basic_member")
             role = WebhookHandlers._map_clerk_role(clerk_role)
@@ -172,8 +171,8 @@ class WebhookHandlers:
         db: AsyncSession, data: Dict[str, Any]
     ) -> None:
         try:
-            user_svc = build_user_service(db=db)
-            org_svc = build_organization_service(db=db)
+            user_svc = get_user_service(db=db)
+            org_svc = get_organization_service(db=db)
 
             user = await user_svc.get_user_by_clerk_id(data["public_user_data"]["user_id"])
             org = await org_svc.get_organization_by_clerk_id(data["organization"]["id"])

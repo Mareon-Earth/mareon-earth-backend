@@ -18,7 +18,6 @@ from app.domain.document.schemas import (
     InitiateDocumentUploadRequest,
     InitiateDocumentUploadResponse,
 )
-from app.domain.document.dependencies import build_document_service
 
 __all__ = [
     "Document",
@@ -38,5 +37,4 @@ __all__ = [
     "InvalidDocumentFileError",
     "InitiateDocumentUploadRequest",
     "InitiateDocumentUploadResponse",
-    "build_document_service",
 ]

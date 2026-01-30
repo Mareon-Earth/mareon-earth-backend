@@ -20,7 +20,6 @@ from .exceptions import (
     OrganizationAlreadyExistsError,
     OrganizationMemberAlreadyExistsError,
 )
-from .dependencies import build_organization_service
 
 __all__ = [
     "Organization",
@@ -42,5 +41,4 @@ __all__ = [
     "OrganizationMemberNotFoundError",
     "OrganizationAlreadyExistsError",
     "OrganizationMemberAlreadyExistsError",
-    "build_organization_service",
 ]

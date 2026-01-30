@@ -3,7 +3,6 @@ from .schemas import UserCreate, UserUpdate, UserRead
 from .repository import UserRepository, UserRepositoryProtocol
 from .service import UserServiceProtocol
 from .exceptions import UserNotFoundError, UserAlreadyExistsError
-from .dependencies import build_user_service
 
 __all__ = [
     "User",
@@ -15,5 +14,4 @@ __all__ = [
     "UserServiceProtocol",
     "UserNotFoundError",
     "UserAlreadyExistsError",
-    "build_user_service",
 ]
