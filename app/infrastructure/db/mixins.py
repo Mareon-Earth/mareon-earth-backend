@@ -1,6 +1,8 @@
 # app/infrastructure/db/mixins.py
 from __future__ import annotations
 
+from datetime import datetime
+
 from app.infrastructure.db.sa import (
     String,
     TIMESTAMP,
@@ -22,7 +24,7 @@ class UUIDPrimaryKeyMixin:
 
 class CreatedAtMixin:
     """Adds `created_at` timestamp."""
-    created_at: Mapped[str] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
         server_default=text("now()"),
@@ -31,10 +33,11 @@ class CreatedAtMixin:
 
 class UpdatedAtMixin:
     """Adds `updated_at` timestamp."""
-    updated_at: Mapped[str] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
         server_default=text("now()"),
+        onupdate=text("now()"),
     )
 
 

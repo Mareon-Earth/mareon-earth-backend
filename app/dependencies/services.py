@@ -17,6 +17,11 @@ from app.domain.document.repository import (
     DocumentFileRepository,
 )
 
+from app.domain.vessel.repository import (
+    VesselRepository,
+    VesselIdentityRepository,
+)
+
 # ── Services & Protocols ──────────────────────────────────────────────────────
 from app.domain.users.service.user_service import UserService
 from app.domain.users.service.protocols import UserServiceProtocol
@@ -26,6 +31,9 @@ from app.domain.organization.service.protocols import OrganizationServiceProtoco
 
 from app.domain.document.service.document_service import DocumentService
 from app.domain.document.service.protocols import DocumentServiceProtocol
+
+from app.domain.vessel.service.vessel_service import VesselService
+from app.domain.vessel.service.protocols import VesselServiceProtocol
 
 
 # ── Private factory functions ─────────────────────────────────────────────────
@@ -44,6 +52,12 @@ def _document_repo(db: AsyncSession) -> DocumentRepository:
 
 def _document_file_repo(db: AsyncSession) -> DocumentFileRepository:
     return DocumentFileRepository(db)
+
+def _vessel_repo(db: AsyncSession) -> VesselRepository:
+    return VesselRepository(db)
+
+def _vessel_identity_repo(db: AsyncSession) -> VesselIdentityRepository:
+    return VesselIdentityRepository(db)
 
 
 # ── Public dependencies (what routers should import) ──────────────────────────
@@ -102,5 +116,18 @@ def get_document_service(
         files=_document_file_repo(db),
         users=_user_repo(db),
         orgs=_org_repo(db),
+        ctx=ctx,
+    )
+
+def get_vessel_service(
+    db: AsyncSession = Depends(get_db_session),
+    ctx: AuthContext = Depends(get_auth_context),
+) -> VesselServiceProtocol:
+    return VesselService(
+        db=db,
+        vessels=VesselRepository(db),
+        identities=VesselIdentityRepository(db),
+        users=UserRepository(db),
+        orgs=OrganizationRepository(db),
         ctx=ctx,
     )

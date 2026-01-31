@@ -9,6 +9,7 @@ from app.infrastructure.db.engine_factory import EngineFactory
 from app.domain.users.models import User
 from app.domain.organization.models import Organization, OrganizationMember
 from app.domain.document.models import Document, DocumentFile
+from app.domain.vessel.models import Vessel, VesselIdentity
 
 config = context.config
 settings = get_settings()

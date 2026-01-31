@@ -5,6 +5,7 @@ from app.dependencies.services import (
     get_organization_service,
     get_authed_organization_service,
     get_document_service,
+    get_vessel_service
 )
 
 __all__ = [
@@ -13,4 +14,5 @@ __all__ = [
     "get_organization_service",
     "get_authed_organization_service",
     "get_document_service",
+    "get_vessel_service",
 ]

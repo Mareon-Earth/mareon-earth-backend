@@ -1,4 +1,3 @@
-# app/infrastructure/db/sa.py
 """
 Small SQLAlchemy 2.0 "prelude" so domain model files don't repeatedly import
 a huge list of types/helpers from sqlalchemy/sqlalchemy.orm.

@@ -4,6 +4,7 @@ UserId: TypeAlias = str
 OrganizationId: TypeAlias = str
 DocumentId: TypeAlias = str
 DocumentFileId: TypeAlias = str
+VesselId: TypeAlias = str
 
 OrganizationMemberId: TypeAlias = tuple[str, str]
 
