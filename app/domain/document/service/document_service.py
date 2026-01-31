@@ -132,7 +132,7 @@ class DocumentService(DocumentServiceProtocol):
                 upload_url=upload_url,
                 method="PUT",
                 required_headers={
-                    "Content-Type": payload.mime_type,
+                    "Content-Type": content_type,
                     "Content-MD5": payload.content_md5_b64,
                     },
                 document_id=document_id,
