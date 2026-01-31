@@ -6,7 +6,9 @@ from app.core.config import get_settings
 from app.infrastructure.db.session_manager import Base
 from app.infrastructure.db.engine_factory import EngineFactory
 
-import app.domain
+from app.domain.users.models import User
+from app.domain.organization.models import Organization, OrganizationMember
+from app.domain.document.models import Document, DocumentFile
 
 config = context.config
 settings = get_settings()
