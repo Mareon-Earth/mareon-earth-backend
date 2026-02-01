@@ -10,4 +10,4 @@ cloud-sql-python-connector
 pg8000
 svix
 google-cloud-storage
-google-auth
+google-cloud-pubsub
