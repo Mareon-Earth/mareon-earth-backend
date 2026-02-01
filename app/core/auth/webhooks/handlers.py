@@ -24,6 +24,7 @@ class WebhookHandlers:
                 image_url=data.get("image_url"),
             )
             user = await user_svc.create_user(payload)
+            # Sync internal ID to Clerk metadata
             await update_user_metadata(user.clerk_user_id, public_metadata={"user_id": user.id})
             logger.info(f"User created: {data['id']}")
         except Exception as e:
@@ -66,6 +67,7 @@ class WebhookHandlers:
                 logo_url=data.get("logo_url"),
             )
             org = await org_svc.create_organization(payload)
+            # Sync internal ID to Clerk metadata
             await update_organization_metadata(org.clerk_id, public_metadata={"org_id": org.id})
             logger.info(f"Organization created: {data['id']}")
         except Exception as e:
