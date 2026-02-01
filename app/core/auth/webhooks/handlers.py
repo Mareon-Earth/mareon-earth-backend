@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth.client import update_organization_metadata, update_user_metadata
 from app.domain.users.schemas import UserCreate, UserUpdate
 from app.dependencies.services import get_user_service, get_organization_service
 from app.domain.organization.schemas import OrganizationCreate, OrganizationUpdate
@@ -22,7 +23,8 @@ class WebhookHandlers:
                 full_name=f"{data.get('first_name', '')} {data.get('last_name', '')}".strip() or None,
                 image_url=data.get("image_url"),
             )
-            await user_svc.create_user(payload)
+            user = await user_svc.create_user(payload)
+            await update_user_metadata(user.clerk_user_id, public_metadata={"user_id": user.id})
             logger.info(f"User created: {data['id']}")
         except Exception as e:
             logger.error(f"Failed to handle user.created: {e}", exc_info=True)
@@ -63,7 +65,8 @@ class WebhookHandlers:
                 name=data["name"],
                 logo_url=data.get("logo_url"),
             )
-            await org_svc.create_organization(payload)
+            org = await org_svc.create_organization(payload)
+            await update_organization_metadata(org.clerk_id, public_metadata={"org_id": org.id})
             logger.info(f"Organization created: {data['id']}")
         except Exception as e:
             logger.error(f"Failed to handle organization.created: {e}", exc_info=True)
@@ -118,6 +121,7 @@ class WebhookHandlers:
                 user = await user_svc.get_user_by_clerk_id(data["public_user_data"]["user_id"])
             except Exception:
                 user = await user_svc.create_user(user_payload)
+                await update_user_metadata(user.clerk_user_id, public_metadata={"user_id": user.id})
 
             org_payload = OrganizationCreate(
                 clerk_id=data["organization"]["id"],
@@ -129,6 +133,7 @@ class WebhookHandlers:
                 org = await org_svc.get_organization_by_clerk_id(data["organization"]["id"])
             except Exception:
                 org = await org_svc.create_organization(org_payload)
+                await update_organization_metadata(org.clerk_id, public_metadata={"org_id": org.id})
 
             await org_svc.add_member_to_organization(org.id, user.id, role)
             logger.info(
