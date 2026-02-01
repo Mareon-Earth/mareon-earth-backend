@@ -1,6 +1,7 @@
 from fastapi import Request, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth.client import update_user_metadata, update_organization_metadata
 from app.core.auth.context import AuthContext
 from app.core.auth.exceptions import (
     MissingOrganizationError,
@@ -32,7 +33,12 @@ async def get_auth_context(
         raise PendingOrganizationError()
 
     # Resolve Internal User ID
-    internal_user_id = payload.get("public_metadata", {}).get("user_id")
+    # Check custom claim 'user_public_metadata' first (user config), then fallback
+    user_metadata = payload.get("user_public_metadata") or {}
+    if not isinstance(user_metadata, dict):
+        user_metadata = {}
+    
+    internal_user_id = user_metadata.get("user_id") or payload.get("public_metadata", {}).get("user_id")
     user_source = "session"
 
     if not internal_user_id:
@@ -42,11 +48,22 @@ async def get_auth_context(
         if user:
             internal_user_id = user.id
             user_source = "db"
+            # Self-healing: Sync to Clerk metadata so next token has it
+            try:
+                print(f"[Auth] Self-healing: Syncing internal user_id to Clerk for {user_id}")
+                await update_user_metadata(user_id, public_metadata={"user_id": user.id})
+            except Exception as e:
+                print(f"[Auth] Failed to sync user metadata: {e}")
 
     print(f"[Auth] Resolved User ID {internal_user_id} from {user_source}")
 
     # Resolve Internal Org ID
-    internal_org_id = payload.get("org_public_metadata", {}).get("org_id")
+    # Check custom claim 'org_public_metadata' first (user config), then fallback
+    org_metadata = payload.get("org_public_metadata") or {}
+    if not isinstance(org_metadata, dict):
+        org_metadata = {}
+
+    internal_org_id = org_metadata.get("org_id") or payload.get("organization", {}).get("public_metadata", {}).get("org_id")
     org_source = "session"
 
     if not internal_org_id and org_id:
@@ -56,6 +73,12 @@ async def get_auth_context(
         if org:
             internal_org_id = org.id
             org_source = "db"
+            # Self-healing: Sync to Clerk metadata so next token has it
+            try:
+                print(f"[Auth] Self-healing: Syncing internal org_id to Clerk for {org_id}")
+                await update_organization_metadata(org_id, public_metadata={"org_id": org.id})
+            except Exception as e:
+                print(f"[Auth] Failed to sync org metadata: {e}")
 
     print(f"[Auth] Resolved Org ID {internal_org_id} from {org_source}")
 
