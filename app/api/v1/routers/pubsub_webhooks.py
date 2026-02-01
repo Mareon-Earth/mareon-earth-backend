@@ -21,6 +21,6 @@ async def pubsub_webhook(request: Request):
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
     message = body["message"]
-    logger.info(f"Received Pub/Sub message: {message}")    
+    print(f"Received Pub/Sub message: {message}")    
     return Response(status_code=status.HTTP_204_NO_CONTENT)
     

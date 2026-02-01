@@ -127,7 +127,6 @@ class DocumentService(DocumentServiceProtocol):
 
             await self._db.commit()
 
-            print("Generated upload URL for document file:", document_file_id)
             return InitiateDocumentUploadResponse(
                 upload_url=upload_url,
                 method="PUT",
