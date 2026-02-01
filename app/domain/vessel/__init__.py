@@ -1,5 +1,5 @@
 from app.domain.vessel.models import Vessel, VesselIdentity
-from app.domain.vessel.enums import VesselType, AisShipType, vessel_type_from_ais
+from app.domain.vessel.enums import VesselType
 from app.domain.vessel.repository import (
     VesselRepository,
     VesselRepositoryProtocol,
@@ -22,8 +22,6 @@ __all__ = [
     "Vessel",
     "VesselIdentity",
     "VesselType",
-    "AisShipType",
-    "vessel_type_from_ais",
     "VesselRepositoryProtocol",
     "VesselRepository",
     "VesselIdentityRepositoryProtocol",

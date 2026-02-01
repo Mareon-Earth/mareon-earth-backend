@@ -69,7 +69,6 @@ class VesselService(VesselServiceProtocol):
                 org_id=org_id,
                 created_by=user_id,
                 name=payload.name,
-                vessel_type=payload.vessel_type,
             )
 
             if payload.identity is not None:
@@ -78,8 +77,7 @@ class VesselService(VesselServiceProtocol):
                     mmsi_number=payload.identity.mmsi_number,
                     call_sign=payload.identity.call_sign,
                     reported_name=payload.identity.reported_name,
-                    reported_type=payload.identity.reported_type,
-                    ais_ship_type=payload.identity.ais_ship_type,
+                    vessel_type=payload.identity.vessel_type,
                     flag_state=payload.identity.flag_state,
                     port_of_registry=payload.identity.port_of_registry,
                     class_society=payload.identity.class_society,
@@ -143,8 +141,7 @@ class VesselService(VesselServiceProtocol):
                 mmsi_number=vessel.identity.mmsi_number,
                 call_sign=vessel.identity.call_sign,
                 reported_name=vessel.identity.reported_name,
-                reported_type=vessel.identity.reported_type,
-                ais_ship_type=vessel.identity.ais_ship_type,
+                vessel_type=vessel.identity.vessel_type,
                 flag_state=vessel.identity.flag_state,
                 port_of_registry=vessel.identity.port_of_registry,
                 class_society=vessel.identity.class_society,
@@ -158,7 +155,6 @@ class VesselService(VesselServiceProtocol):
             org_id=vessel.org_id,
             created_by=vessel.created_by,
             name=vessel.name,
-            vessel_type=vessel.vessel_type,
             created_at=vessel.created_at,
             updated_at=vessel.updated_at,
             identity=identity,

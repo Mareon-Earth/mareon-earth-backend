@@ -6,7 +6,7 @@ from typing import Any
 from pydantic import Field, field_validator
 
 from app.domain._shared import RequestSchema, ResponseSchema, strip_or_none
-from .enums import VesselType, AisShipType
+from .enums import VesselType
 
 
 class VesselIdentityCreate(RequestSchema):
@@ -20,9 +20,8 @@ class VesselIdentityCreate(RequestSchema):
     call_sign: str | None = None
 
     reported_name: str | None = None
-    reported_type: str | None = None
 
-    ais_ship_type: AisShipType | None = None
+    vessel_type: VesselType | None = None
 
     flag_state: str | None = None
     port_of_registry: str | None = None
@@ -35,7 +34,7 @@ class VesselIdentityCreate(RequestSchema):
         "mmsi_number",
         "call_sign",
         "reported_name",
-        "reported_type",
+        "vessel_type",
         "flag_state",
         "port_of_registry",
         "class_society",
@@ -71,7 +70,6 @@ class VesselCreate(RequestSchema):
     """
 
     name: str = Field(default="Unnamed Vessel", min_length=1)
-    vessel_type: VesselType = Field(default=VesselType.OTHER)
 
     identity: VesselIdentityCreate | None = None
 
@@ -91,8 +89,7 @@ class VesselIdentityRead(ResponseSchema):
     call_sign: str | None
 
     reported_name: str | None
-    reported_type: str | None
-    ais_ship_type: AisShipType | None
+    vessel_type: VesselType | None
 
     flag_state: str | None
     port_of_registry: str | None
@@ -110,7 +107,6 @@ class VesselRead(ResponseSchema):
     created_by: str | None
 
     name: str
-    vessel_type: VesselType
 
     created_at: datetime
     updated_at: datetime
