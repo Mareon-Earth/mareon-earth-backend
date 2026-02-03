@@ -9,6 +9,7 @@ class PubSubTopic(StrEnum):
     Used for publishing messages.
     """
     DOCUMENT_UPLOADS = "mareon-prod-document-uploads"
+    PARSING_JOBS = "mareon-prod-parsing-jobs"
     # Add more topics as needed:
     # DOCUMENT_PROCESSED = "mareon-prod-document-processed"
     # VESSEL_UPDATES = "mareon-prod-vessel-updates"

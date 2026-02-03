@@ -14,6 +14,8 @@ from app.core.pubsub import (
     PubSubDropError,
     PubSubRetryableError,
     PubSubSubscription,
+    PubSubTopic,
+    get_publisher,
 )
 from app.domain.processing.enums import ParsingJobStatus
 from app.domain.processing.models import ParsingJob
@@ -69,9 +71,10 @@ class DocumentUploadHandler(GcsUploadHandler):
         if not parsed:
             raise PubSubDropError(f"Invalid path: {metadata.name}")
 
+        parsing_job = None
         async with self._session_manager() as session:
             try:
-                await self._process_upload(session, ctx, metadata, parsed)
+                parsing_job = await self._process_upload(session, ctx, metadata, parsed)
                 await session.commit()
             except (PubSubDropError, PubSubRetryableError):
                 await session.rollback()
@@ -81,13 +84,35 @@ class DocumentUploadHandler(GcsUploadHandler):
                 logger.exception("Error processing upload: %s", metadata.name)
                 raise PubSubRetryableError(f"Unexpected error: {e}") from e
 
+        if parsing_job:
+            try:
+                await get_publisher().publish(
+                    topic=PubSubTopic.PARSING_JOBS,
+                    data={
+                        "job_id": str(parsing_job.id),
+                        "org_id": str(parsing_job.org_id),
+                        "document_id": str(parsing_job.document_id),
+                        "file_id": str(parsing_job.document_file_id),
+                        "source_uri": parsing_job.source_gcs_object,
+                        "result_gcs_bucket": parsing_job.result_gcs_bucket,
+                        "result_gcs_prefix":  parsing_job.result_gcs_prefix
+                    },
+                    attributes={
+                        "eventType": "PARSING_JOB_CREATED",
+                        "orgId": str(parsing_job.org_id),
+                    }
+                )
+                logger.info("Published parsing job notification for job %s", parsing_job.id)
+            except Exception as e:
+                logger.error("Failed to publish parsing job notification: %s", e)
+
     async def _process_upload(
         self,
         session: AsyncSession,
         ctx: PubSubContext,
         metadata: GcsObjectMetadata,
         parsed: ParsedUploadPath,
-    ) -> None:
+    ) -> ParsingJob | None:
         file_repo = DocumentFileRepository(session)
         job_repo = ParsingJobRepository(session)
 
@@ -100,13 +125,13 @@ class DocumentUploadHandler(GcsUploadHandler):
 
         requires_parsing = getattr(doc_file, 'requires_parsing', True)
         if not requires_parsing:
-            return
+            return None
 
         if await job_repo.does_job_exist_for_file(parsed.document_file_id):
-            return
+            return None
 
         if ctx.message_id and await job_repo.does_job_exist_for_message(ctx.message_id):
-            return
+            return None
 
         parsing_job = ParsingJob(
             org_id=parsed.org_id,
@@ -123,3 +148,4 @@ class DocumentUploadHandler(GcsUploadHandler):
 
         await job_repo.create(parsing_job)
         logger.info("Created ParsingJob %s", parsing_job.id)
+        return parsing_job
