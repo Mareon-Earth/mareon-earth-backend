@@ -3,6 +3,9 @@ import json
 import logging
 
 from fastapi import APIRouter, Request, Response, status
+from pydantic import ValidationError
+
+from app.core.pubsub import PubSubPushEnvelope, GcsObjectMetadata
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 logger = logging.getLogger(__name__)
@@ -10,59 +13,45 @@ logger = logging.getLogger(__name__)
 
 @router.post("/pubsub")
 async def pubsub_webhook(request: Request):
-    """
-    Handle Google Cloud Pub/Sub push messages.
-    """
     try:
         body = await request.json()
     except Exception:
         logger.exception("Invalid JSON payload in Pub/Sub webhook")
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
-    msg = (body or {}).get("message")
-    if not isinstance(msg, dict):
-        logger.error("Invalid Pub/Sub message format (missing 'message')")
+    try:
+        env = PubSubPushEnvelope.model_validate(body)  # ignores extra keys
+    except ValidationError:
+        logger.exception("Invalid Pub/Sub message format")
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
-    b64 = msg.get("data")
+    b64 = env.message.data
     if not b64:
         logger.error("Pub/Sub message missing 'data'")
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
-    # 1) Decode base64 -> bytes
     try:
-        raw_bytes = base64.b64decode(b64)
+        raw_text = base64.b64decode(b64).decode("utf-8")
     except Exception:
-        logger.exception("Failed to base64-decode Pub/Sub message.data")
+        logger.exception("Failed to decode Pub/Sub message.data")
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
-    # 2) Bytes -> string (utf-8)
-    try:
-        raw_text = raw_bytes.decode("utf-8")
-    except Exception:
-        logger.exception("Failed to decode Pub/Sub message.data as utf-8")
-        return Response(status_code=status.HTTP_400_BAD_REQUEST)
-
-    # 3) Parse JSON if possible (GCS JSON_API_V1 is JSON)
-    decoded = None
     try:
         decoded = json.loads(raw_text)
     except Exception:
-        # Not JSON — keep as text
         decoded = raw_text
 
-    # Print/log both the wrapper and decoded payload
-    print(msg)
+    # same intent as before: print wrapper + decoded payload
+    print(env.message.model_dump(by_alias=True))
+    print("Decoded message.data:", decoded)
 
-    print("Decoded message.data: %s", decoded)
-
-    # If it *is* the GCS object JSON, you can also pull key fields:
+    # map decoded -> your model (ignore extra fields)
     if isinstance(decoded, dict):
-        logger.info("GCS event: bucket=%s name=%s generation=%s contentType=%s size=%s",
-                    decoded.get("bucket"),
-                    decoded.get("name"),
-                    decoded.get("generation"),
-                    decoded.get("contentType"),
-                    decoded.get("size"))
+        try:
+            meta = GcsObjectMetadata.model_validate(decoded)
+            logger.info("GCS event: bucket=%s name=%s contentType=%s",
+                        meta.bucket, meta.name, meta.contentType)
+        except ValidationError:
+            pass
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -58,7 +58,6 @@ async def get_auth_context(
     print(f"[Auth] Resolved User ID {internal_user_id} from {user_source}")
 
     # Resolve Internal Org ID
-    # Check custom claim 'org_public_metadata' first (user config), then fallback
     org_metadata = payload.get("org_public_metadata") or {}
     if not isinstance(org_metadata, dict):
         org_metadata = {}
@@ -86,7 +85,6 @@ async def get_auth_context(
         user_id=user_id,
         organization_id=org_id,
         organization_role=payload.get("org_role"),
-        session_id=payload.get("sid"),
         internal_user_id=internal_user_id,
         internal_org_id=internal_org_id,
     )

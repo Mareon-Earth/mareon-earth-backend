@@ -61,30 +61,7 @@ class DocumentService(DocumentServiceProtocol):
         try:
             # Prefer internal IDs from Clerk metadata when available (saves DB hits)
             org_id = self._ctx.internal_org_id
-            if not org_id:
-                print("[DocumentService] Internal Org ID not in AuthContext. Fetching from DB...")
-                org = await self._orgs.get_by_clerk_id(
-                    clerk_org_id=self._ctx.organization_id,)
-                if not org:
-                    # TODO: replace with an org-specific error once DomainError handler exists
-                    raise DocumentNotFoundError()
-                org_id = org.id
-            else:
-                print(f"[DocumentService] Using Internal Org ID {org_id} from AuthContext (Session)")
-
-
             user_id = self._ctx.internal_user_id
-            if not user_id:
-                print("[DocumentService] Internal User ID not in AuthContext. Fetching from DB...")
-                user = await self._users.get_by_clerk_id(
-                    clerk_user_id=self._ctx.user_id,
-                )
-                if not user:
-                    # TODO: replace with a user-specific error once DomainError handler exists
-                    raise DocumentNotFoundError()
-                user_id = user.id
-            else:
-                print(f"[DocumentService] Using Internal User ID {user_id} from AuthContext (Session)")
 
             # 1) Use existing doc or create a new one
             if payload.document_id:

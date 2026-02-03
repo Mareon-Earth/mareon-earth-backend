@@ -13,9 +13,8 @@ class AuthContext(BaseModel):
     organization_role: Optional[str] = Field(
         None, description="Clerk org role (org_role)"
     )
-    session_id: Optional[str] = Field(None, description="Clerk session id (sid)")
-    internal_user_id: Optional[str] = Field(None, description="Internal user id")
-    internal_org_id: Optional[str] = Field(None, description="Internal org id")
+    internal_user_id: str = Field(..., description="Internal user id")
+    internal_org_id: str = Field(..., description="Internal org id")
 
     class Config:
         frozen = True
