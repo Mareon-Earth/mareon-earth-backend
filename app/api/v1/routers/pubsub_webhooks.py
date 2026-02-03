@@ -24,6 +24,7 @@ async def pubsub_webhook(request: Request):
     except ValidationError:
         logger.exception("Invalid Pub/Sub message format")
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
+    print(env.subscription)
 
     b64 = env.message.data
     if not b64:
