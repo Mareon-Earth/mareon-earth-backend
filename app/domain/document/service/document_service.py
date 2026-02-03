@@ -93,7 +93,7 @@ class DocumentService(DocumentServiceProtocol):
             await self._files.create(doc_file)
 
             document_file_id = doc_file.id
-            storage_path = f"org/{org_id}/documents/{document_id}/files/{document_file_id}/source"
+            storage_path = f"org-uploads/{org_id}/documents/{document_id}/files/{document_file_id}/source"
 
             doc_file.storage_path = storage_path
             await self._files.update(doc_file)
