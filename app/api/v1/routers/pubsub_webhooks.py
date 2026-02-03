@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 async def pubsub_webhook(request: Request):
     try:
         body = await request.json()
+        print(body)
     except Exception:
         logger.exception("Invalid JSON payload in Pub/Sub webhook")
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
