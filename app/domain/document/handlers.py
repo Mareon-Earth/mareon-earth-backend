@@ -118,7 +118,7 @@ class DocumentUploadHandler(GcsUploadHandler):
             pubsub_publish_time=ctx.publish_time,
             source_gcs_object=f"gs://{metadata.bucket}/{metadata.name}",
             result_gcs_bucket=metadata.bucket,
-            result_gcs_prefix=f"org-uploads/{parsed.org_id}/documents/{parsed.document_id}/files/{parsed.document_file_id}/parsing/",
+            result_gcs_prefix=f"org-uploads-parsed/{parsed.org_id}/documents/{parsed.document_id}/files/{parsed.document_file_id}/",
         )
 
         await job_repo.create(parsing_job)
