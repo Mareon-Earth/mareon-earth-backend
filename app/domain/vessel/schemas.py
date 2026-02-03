@@ -25,7 +25,7 @@ class VesselIdentityCreate(RequestSchema):
     )
     call_sign: str | None = Field(
         None,
-        description="Radio call sign. Distinctive numbers or letters. 4-7 alphanumeric characters.",
+        description="Radio call sign. 4-7 alphanumeric characters.",
     )
     reported_name: str | None = Field(
         None,
