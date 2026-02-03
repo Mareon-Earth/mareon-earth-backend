@@ -52,8 +52,7 @@ async def pubsub_webhook(request: Request):
         decoded = raw_text
 
     # Print/log both the wrapper and decoded payload
-    print("Received Pub/Sub messageId=%s publishTime=%s attributes=%s",
-                msg.get("messageId"), msg.get("publishTime"), msg.get("attributes"))
+    print(msg)
 
     print("Decoded message.data: %s", decoded)
 
