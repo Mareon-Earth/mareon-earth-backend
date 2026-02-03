@@ -19,6 +19,9 @@ from app.infrastructure.db.engine_factory import EngineFactory
 
 settings = get_settings()
 
+# Type alias for session factory
+SessionManager = async_sessionmaker[AsyncSession]
+
 
 class Base(DeclarativeBase):
     """
