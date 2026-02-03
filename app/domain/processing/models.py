@@ -6,10 +6,12 @@ from app.infrastructure.db import Base
 import app.infrastructure.db.sa as sa
 from app.infrastructure.db.mixins import UUIDPrimaryKeyMixin, TimestampsMixin
 
+# FIX 1: Import Enum here (runtime), not inside TYPE_CHECKING
+from .enums import ParsingJobStatus
+
 if TYPE_CHECKING:
     from app.domain.organization import Organization
     from app.domain.document import Document, DocumentFile
-    from .enums import ParsingJobStatus
 
 
 class ParsingJob(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
@@ -73,18 +75,13 @@ class ParsingJob(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
     pubsub_message_id: sa.Mapped[str | None] = sa.mapped_column(sa.String, nullable=True, index=True)
     pubsub_publish_time: sa.Mapped[sa.DateTime | None] = sa.mapped_column(sa.DateTime(timezone=True), nullable=True)
 
-    # Storage paths (optional but convenient)
-    # Example:
-    # result_gcs_prefix = org/<org_id>/documents/<document_id>/files/<document_file_id>/parsing/
+    # Storage paths
     result_gcs_bucket: sa.Mapped[str | None] = sa.mapped_column(sa.String, nullable=True)
     result_gcs_prefix: sa.Mapped[str | None] = sa.mapped_column(sa.String, nullable=True)
-
-    # Example:
-    # source_gcs_object = org/<org_id>/documents/<document_id>/files/<document_file_id>/source
     source_gcs_object: sa.Mapped[str | None] = sa.mapped_column(sa.String, nullable=True)
 
     __table_args__ = (
-        # 1. One active job per file
+        # 1. One active job per file (Partial Index)
         sa.Index(
             "ux_parsing_job_active_file",
             "document_file_id",
@@ -93,14 +90,17 @@ class ParsingJob(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
                 "status IN ('PENDING','QUEUED','PROCESSING','RETRYING')"
             ),
         ),
-        # 2. One job per Pub/Sub message
-        sa.UniqueConstraint(
+        
+        # FIX 2: Changed from UniqueConstraint to Index(unique=True)
+        # because UniqueConstraint does not support 'postgresql_where'
+        sa.Index(
+            "uq_parsing_job_pubsub_message_id",
             "pubsub_message_id",
-            name="uq_parsing_job_pubsub_message_id",
+            unique=True,
             postgresql_where=sa.text("pubsub_message_id IS NOT NULL"),
         ),
+
         # Helpful indexes
-        sa.Index("ix_parsing_job_pubsub_message_id", "pubsub_message_id"),
         sa.Index("ix_parsing_job_document_file_status", "document_file_id", "status"),
         sa.Index("ix_parsing_job_org_status_created", "org_id", "status", "created_at"),
         sa.Index("ix_parsing_job_status_created_at", "status", "created_at"),
@@ -109,3 +109,7 @@ class ParsingJob(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
     organization: sa.Mapped["Organization"] = sa.relationship("Organization", foreign_keys=[org_id])
     document: sa.Mapped["Document"] = sa.relationship("Document", foreign_keys=[document_id])
     document_file: sa.Mapped["DocumentFile"] = sa.relationship("DocumentFile", foreign_keys=[document_file_id])
+
+__all__ = [
+    "ParsingJob"
+]

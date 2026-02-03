@@ -10,7 +10,7 @@ from app.domain.users.models import User
 from app.domain.organization.models import Organization, OrganizationMember
 from app.domain.document.models import Document, DocumentFile
 from app.domain.vessel.models import Vessel, VesselIdentity
-
+from app.domain.processing.models import *
 config = context.config
 settings = get_settings()
 
