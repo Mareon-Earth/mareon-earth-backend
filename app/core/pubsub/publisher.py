@@ -5,13 +5,11 @@ import logging
 from typing import Any
 
 from google.cloud import pubsub_v1
-from google.api_core import exceptions as gcp_exceptions
 
 from .enums import PubSubTopic
 from .exceptions import PubSubConfigError, PubSubPublishError
 
 logger = logging.getLogger(__name__)
-
 
 class PubSubPublisher:
     def __init__(self, project_id: str) -> None:
@@ -85,36 +83,10 @@ class PubSubPublisher:
     def close(self) -> None:
         self._client.stop()
 
-
 class MockPubSubPublisher:
-    """
-    Mock publisher for testing.
-    
-    Records all published messages for assertion in tests.
-    """
-
     def __init__(self, project_id: str = "test-project") -> None:
         self._project_id = project_id
         self._messages: list[dict[str, Any]] = []
-        self._message_counter = 0
-
-    @property
-    def project_id(self) -> str:
-        return self._project_id
-
-    @property
-    def messages(self) -> list[dict[str, Any]]:
-        """Get all published messages."""
-        return self._messages.copy()
-
-    def get_messages_for_topic(self, topic: PubSubTopic) -> list[dict[str, Any]]:
-        """Get all messages published to a specific topic."""
-        return [m for m in self._messages if m["topic"] == topic]
-
-    def clear(self) -> None:
-        """Clear all recorded messages."""
-        self._messages.clear()
-        self._message_counter = 0
 
     async def publish(
         self,
@@ -123,39 +95,18 @@ class MockPubSubPublisher:
         attributes: dict[str, str] | None = None,
         ordering_key: str | None = None,
     ) -> str:
-        self._message_counter += 1
-        message_id = f"mock-{self._message_counter}"
-
+        message_id = f"mock-{len(self._messages) + 1}"
         self._messages.append({
             "topic": topic,
             "data": data,
             "attributes": attributes or {},
-            "ordering_key": ordering_key,
             "message_id": message_id,
         })
-
-        logger.debug(
-            "Mock published to %s: message_id=%s",
-            topic.value,
-            message_id,
-        )
+        logger.debug("Mock published to %s: %s", topic.value, message_id)
         return message_id
 
-    async def publish_batch(
-        self,
-        topic: PubSubTopic,
-        messages: list[dict[str, Any]],
-    ) -> list[str]:
-        message_ids = []
-        for msg in messages:
-            mid = await self.publish(
-                topic,
-                data=msg.get("data", {}),
-                attributes=msg.get("attributes"),
-            )
-            message_ids.append(mid)
-        return message_ids
+    async def publish_batch(self, topic: PubSubTopic, messages: list[dict[str, Any]]) -> list[str]:
+        return [await self.publish(topic, m.get("data", {}), m.get("attributes")) for m in messages]
 
     def close(self) -> None:
-        """No-op for mock."""
         pass

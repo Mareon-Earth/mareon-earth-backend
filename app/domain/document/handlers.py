@@ -1,11 +1,3 @@
-"""
-Handler for document uploads via GCS notifications.
-
-When a file is uploaded to GCS, this handler:
-1. Parses the storage path to extract org_id, document_id, document_file_id
-2. Looks up the DocumentFile to check if it requires parsing
-3. Creates a ParsingJob if parsing is needed
-"""
 from __future__ import annotations
 
 import logging
@@ -33,29 +25,20 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass(frozen=True)
 class ParsedUploadPath:
-    """Parsed components from a GCS upload path."""
     org_id: str
     document_id: str
     document_file_id: str
-    filename: str  # e.g., "source"
+    filename: str
 
     @classmethod
     def from_gcs_path(cls, path: str) -> "ParsedUploadPath | None":
-        """
-        Parse a GCS object path into its components.
-        
-        Expected format: org-uploads/{org_id}/documents/{document_id}/files/{document_file_id}/{filename}
-        
-        Returns None if the path doesn't match the expected format.
-        """
         pattern = r"^org-uploads/([^/]+)/documents/([^/]+)/files/([^/]+)/(.+)$"
         match = re.match(pattern, path)
         if not match:
             return None
-        
+
         return cls(
             org_id=match.group(1),
             document_id=match.group(2),
@@ -63,28 +46,11 @@ class ParsedUploadPath:
             filename=match.group(4),
         )
 
-
 class DocumentUploadHandler(GcsUploadHandler):
-    """
-    Handles GCS upload notifications for documents.
-    
-    When a file is uploaded:
-    1. Validates the path structure
-    2. Looks up the DocumentFile record
-    3. If the file requires parsing, creates a ParsingJob
-    
-    This handler uses a session manager to create request-scoped DB sessions,
-    since handlers are registered at application startup but need fresh
-    sessions for each message.
-    """
-
     name = "document_upload_handler"
     subscriptions = {PubSubSubscription.DOCUMENT_UPLOADS_API}
-    
-    # Only process files under org-uploads/
     allowed_prefixes = {"org-uploads/"}
-    
-    # Only process these content types (parseable document types)
+
     allowed_content_types = {
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

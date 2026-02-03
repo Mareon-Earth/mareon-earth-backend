@@ -6,7 +6,6 @@ from typing import ClassVar
 from .context import PubSubContext
 from .enums import PubSubSubscription
 
-
 class BasePubSubHandler(ABC):
     name: ClassVar[str]
     subscriptions: ClassVar[set[PubSubSubscription]]
@@ -18,7 +17,6 @@ class BasePubSubHandler(ABC):
     async def handle(self, ctx: PubSubContext) -> None:
         ...
 
-
 class GcsUploadHandler(BasePubSubHandler):
     allowed_prefixes: ClassVar[set[str]] = set()
     allowed_content_types: ClassVar[set[str]] = set()
@@ -26,7 +24,7 @@ class GcsUploadHandler(BasePubSubHandler):
     def matches(self, ctx: PubSubContext) -> bool:
         if ctx.event_type != "OBJECT_FINALIZE":
             return False
-        
+
         if not super().matches(ctx):
             return False
 
@@ -54,8 +52,6 @@ class GcsUploadHandler(BasePubSubHandler):
     async def handle_upload(self, ctx: PubSubContext, metadata: "GcsObjectMetadata") -> None:
         ...
 
-
-# Type alias for forward reference
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .types import GcsObjectMetadata

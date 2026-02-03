@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
 class PubSubDispatcher:
     def __init__(self) -> None:
         self._handlers: dict[PubSubSubscription, list[PubSubHandlerProtocol]] = defaultdict(list)
@@ -64,23 +63,14 @@ class PubSubDispatcher:
 
         return processed
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Global dispatcher instance (registered at app startup)
-# ──────────────────────────────────────────────────────────────────────────────
-
 _dispatcher: PubSubDispatcher | None = None
 
-
 def get_dispatcher() -> PubSubDispatcher:
-    """Get the global dispatcher instance."""
     global _dispatcher
     if _dispatcher is None:
         _dispatcher = PubSubDispatcher()
     return _dispatcher
 
-
 def reset_dispatcher() -> None:
-    """Reset the global dispatcher (for testing)."""
     global _dispatcher
     _dispatcher = None

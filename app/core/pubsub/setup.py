@@ -51,6 +51,15 @@ def setup_pubsub(
     else:
         logger.warning("Pub/Sub publisher not initialized (no project_id)")
 
+    # Fallback to global AsyncSessionLocal if not provided
+    if session_manager is None:
+        try:
+            from app.infrastructure.db.session_manager import AsyncSessionLocal
+            session_manager = AsyncSessionLocal
+            logger.info("Using global AsyncSessionLocal for Pub/Sub handlers")
+        except ImportError:
+            logger.warning("Could not import AsyncSessionLocal")
+
     if session_manager:
         from app.domain.document.handlers import DocumentUploadHandler
         dispatcher.register(DocumentUploadHandler(session_manager))

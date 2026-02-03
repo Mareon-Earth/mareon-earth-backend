@@ -9,6 +9,7 @@ This module follows the Session-per-Request pattern for FastAPI applications.
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager # Added import
+from typing import TYPE_CHECKING # Added import for TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
@@ -20,7 +21,10 @@ from app.infrastructure.db.engine_factory import EngineFactory
 settings = get_settings()
 
 # Type alias for session factory
-SessionManager = async_sessionmaker[AsyncSession]
+if TYPE_CHECKING:
+    SessionManager = async_sessionmaker[AsyncSession]
+else:
+    SessionManager = async_sessionmaker
 
 
 class Base(DeclarativeBase):

@@ -6,13 +6,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import api_router
 from app.core.config import get_settings
 from app.core.error_handlers import register_error_handlers
+from app.core.pubsub.setup import setup_pubsub, teardown_pubsub
 from app.infrastructure.db import database_lifespan
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize Pub/Sub handlers
+    settings = get_settings()
+    setup_pubsub(project_id="mareon")
+
     async with database_lifespan():
         yield
+
+    teardown_pubsub()
 
 
 def create_app() -> FastAPI:
