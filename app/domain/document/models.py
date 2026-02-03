@@ -79,6 +79,12 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         server_default=sa.text("true"),
     )
 
+    requires_parsing: sa.Mapped[bool] = sa.mapped_column(
+        sa.Boolean,
+        nullable=False,
+        server_default=sa.text("true"),
+    )
+    
     uploaded_by: sa.Mapped[str | None] = sa.mapped_column(
         sa.String,
         sa.ForeignKey("users.id", ondelete="CASCADE"),
