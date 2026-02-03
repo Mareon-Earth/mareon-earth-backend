@@ -11,57 +11,46 @@ from .enums import VesselType
 
 class VesselIdentityCreate(RequestSchema):
     """
-    Optional nested identity payload for create-vessel.
-    Keep all fields optional so you can create a vessel first and enrich later.
+    Vessel identification data extracted from maritime documents.
+    All fields optional to support incremental enrichment.
     """
 
-    imo_number: str | None = None
-    mmsi_number: str | None = None
-    call_sign: str | None = None
-
-    reported_name: str | None = None
-
-    vessel_type: VesselType | None = None
-
-    flag_state: str | None = None
-    port_of_registry: str | None = None
-
-    class_society: str | None = None
-    class_notation: str | None = None
-
-    _normalize = field_validator(
-        "imo_number",
-        "mmsi_number",
-        "call_sign",
-        "reported_name",
-        "vessel_type",
-        "flag_state",
-        "port_of_registry",
-        "class_society",
-        "class_notation",
-        mode="before",
-    )(strip_or_none)
-
-    @field_validator("imo_number")
-    @classmethod
-    def validate_imo(cls, v: str | None) -> str | None:
-        if v is None:
-            return None
-        # IMO = 7 digits
-        if not (len(v) == 7 and v.isdigit()):
-            raise ValueError("imo_number must be 7 digits")
-        return v
-
-    @field_validator("mmsi_number")
-    @classmethod
-    def validate_mmsi(cls, v: str | None) -> str | None:
-        if v is None:
-            return None
-        # MMSI = 9 digits
-        if not (len(v) == 9 and v.isdigit()):
-            raise ValueError("mmsi_number must be 9 digits")
-        return v
-
+    imo_number: str | None = Field(
+        None,
+        description="IMO ship identification number. 7 digits, no prefix.",
+    )
+    mmsi_number: str | None = Field(
+        None,
+        description="Maritime Mobile Service Identity. 9 digits.",
+    )
+    call_sign: str | None = Field(
+        None,
+        description="Radio call sign. Distinctive numbers or letters. 4-7 alphanumeric characters.",
+    )
+    reported_name: str | None = Field(
+        None,
+        description="Vessel name as stated in the document.",
+    )
+    vessel_type: VesselType = Field(
+        VesselType.OTHER,
+        description="Vessel category. Infer from type field, class notation, or document context.",
+    )
+    flag_state: str | None = Field(
+        None,
+        description="Flag state or country of registration.",
+    )
+    port_of_registry: str | None = Field(
+        None,
+        description="Port where the vessel is registered.",
+    )
+    class_society: str | None = Field(
+        None,
+        description="Classification society name (e.g., DNV, Lloyd's Register). Infer from document source if not explicit.",
+    )
+    class_notation: str | None = Field(
+        None,
+        description="Class notation with all symbols preserved verbatim (e.g., ✠1A1 or ⊕100A1). Do not normalize unicode.",
+    )
 
 class VesselCreate(RequestSchema):
     """
@@ -72,6 +61,7 @@ class VesselCreate(RequestSchema):
     name: str = Field(default="Unnamed Vessel", min_length=1)
 
     identity: VesselIdentityCreate | None = None
+    dimensions: VesselDimensionsCreate | None = None
 
     @field_validator("name", mode="before")
     @classmethod
@@ -112,3 +102,36 @@ class VesselRead(ResponseSchema):
     updated_at: datetime
 
     identity: VesselIdentityRead | None = None
+    dimensions: VesselDimensionsRead | None = None
+
+class VesselDimensionsCreate(RequestSchema):
+    """Vessel physical dimensions."""
+
+    loa_m: float | None = Field(
+        None,
+        description="Length overall (LOA) in meters.",
+    )
+    lbp_m: float | None = Field(
+        None,
+        description="Length between perpendiculars (LBP) in meters.",
+    )
+    breadth_moulded_m: float | None = Field(
+        None,
+        description="Moulded breadth in meters.",
+    )
+    depth_moulded_m: float | None = Field(
+        None,
+        description="Moulded depth in meters.",
+    )
+
+    
+class VesselDimensionsRead(ResponseSchema):
+    vessel_id: str
+
+    loa_m: float | None
+    lbp_m: float | None
+    breadth_moulded_m: float | None
+    depth_moulded_m: float | None
+
+    created_at: datetime
+    updated_at: datetime

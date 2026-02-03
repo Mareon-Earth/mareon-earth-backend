@@ -4,21 +4,15 @@ from enum import Enum, IntEnum
 
 
 class VesselType(str, Enum):
-    """
-    Mareon domain vessel types (generalized categories).
-    Keep this small + product-facing.
-    """
-    CARGO = "CARGO"
-    TANKER = "TANKER"
-    PASSENGER = "PASSENGER"
-    FISHING = "FISHING"
-
-    TUG_TOW = "TUG_TOW"
-    SERVICE = "SERVICE"          # pilot, SAR, law enforcement, port tender, etc.
-    MILITARY = "MILITARY"
-    SAILING = "SAILING"
-    PLEASURE = "PLEASURE"
-    HIGH_SPEED = "HIGH_SPEED"    # HSC
-    WIG = "WIG"                  # wing-in-ground
-
-    OTHER = "OTHER"
+    CARGO       = "CARGO",      # Bulk carriers, container ships, general cargo, ro-ro
+    TANKER      = "TANKER",     # Oil, chemical, gas, LNG, LPG, product tankers
+    PASSENGER   = "PASSENGER",  # Passenger ships, cruise, ferries
+    FISHING     = "FISHING",    # Trawlers, fishing vessels
+    TUG_TOW     = "TUG_TOW",    # Tugs, tugboats, towing vessels
+    SERVICE     = "SERVICE",    # PSV, OSV, AHTS, supply, icebreaker, research, dredger, cable layer, rescue, patrol
+    MILITAR     = "MILITARY",   # Navy, coast guard, warships
+    SAILING     = "SAILING",    # Sailing vessels
+    PLEASUR     = "PLEASURE",   # Yachts, pleasure craft
+    HIGH_SP     = "HIGH_SPEED", # High speed craft (HSC)
+    WIG         = "WIG",        # Wing-in-ground effect craft
+    OTHER       = "OTHER",      # Unknown or unlisted types
