@@ -11,3 +11,5 @@ OrganizationMemberId: TypeAlias = tuple[str, str]
 ClerkUserId: TypeAlias = str
 ClerkOrganizationId: TypeAlias = str
 StoragePath: TypeAlias = str
+
+ParsingJobId: TypeAlias = str

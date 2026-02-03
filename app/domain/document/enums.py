@@ -23,11 +23,6 @@ class DocumentType(str, Enum):
     OTHER = "OTHER"
 
 
-class ParsingStatus(str, Enum):
-    PENDING = "PENDING"
-    PROCESSING = "PROCESSING"
-    SUCCESS = "SUCCESS"
-    ERROR = "ERROR"
-    SKIPPED = "SKIPPED"
 
-__all__ = ["DocumentContentType", "DocumentType", "ParsingStatus"]
+
+__all__ = ["DocumentContentType", "DocumentType"]

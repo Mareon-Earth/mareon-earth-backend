@@ -6,7 +6,7 @@ from app.infrastructure.db import Base
 import app.infrastructure.db.sa as sa
 from app.infrastructure.db.mixins import UUIDPrimaryKeyMixin, TimestampsMixin
 
-from .enums import DocumentType, ParsingStatus
+from .enums import DocumentType
 
 if TYPE_CHECKING:
     from app.domain.organization.models import Organization
@@ -91,29 +91,11 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         server_default=sa.text("now()"),
     )
 
-    parsing_status: sa.Mapped[ParsingStatus] = sa.mapped_column(
-        sa.SAEnum(ParsingStatus, name="parsing_status", native_enum=False),
-        nullable=False,
-        server_default=sa.text(f"'{ParsingStatus.PENDING.value}'"),
-    )
-
-    parsed_at: sa.Mapped[sa.DateTime | None] = sa.mapped_column(
-        sa.DateTime(timezone=True),
-        nullable=True,
-    )
-
-    parsing_errors: sa.Mapped[dict | None] = sa.mapped_column(sa.JSONB, nullable=True)
-
-    parsed_suggestions: sa.Mapped[dict | None] = sa.mapped_column(sa.JSONB, nullable=True)
-
     __table_args__ = (
         sa.UniqueConstraint("document_id", "content_md5_b64", name="uq_document_file_doc_md5"),
         sa.Index("ix_document_file_document_id", "document_id"),
         sa.Index("ix_document_file_org_id", "org_id"),
-        sa.Index("ix_document_file_parsing_status", "parsing_status"),
         sa.Index("ix_document_file_is_latest", "is_latest"),
-        sa.Index("ix_document_file_parsed_suggestions", "parsed_suggestions"),
-        sa.Index("ix_document_file_parsing_errors", "parsing_errors"),
     )
 
     document: sa.Mapped["Document"] = sa.relationship("Document", foreign_keys=[document_id])

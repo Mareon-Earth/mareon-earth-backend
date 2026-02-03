@@ -9,7 +9,6 @@ from app.domain.document import (
     Document,
     DocumentFile,
     DocumentType,
-    ParsingStatus,
     InitiateDocumentUploadRequest,
     InitiateDocumentUploadResponse,
     DocumentNotFoundError,
@@ -113,12 +112,11 @@ class DocumentService(DocumentServiceProtocol):
                 file_size_bytes=payload.file_size_bytes,
                 content_md5_b64=payload.content_md5_b64 or None,
                 uploaded_by=user_id,
-                parsing_status=ParsingStatus.SKIPPED if payload.skip_parsing else ParsingStatus.PENDING
             )
             await self._files.create(doc_file)
 
             document_file_id = doc_file.id
-            storage_path = f"org/{org_id}/documents/{document_id}/files/{document_file_id}"
+            storage_path = f"org/{org_id}/documents/{document_id}/files/{document_file_id}/source"
 
             doc_file.storage_path = storage_path
             await self._files.update(doc_file)
