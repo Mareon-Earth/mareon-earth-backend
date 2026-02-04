@@ -16,6 +16,13 @@ from app.domain.vessel.schemas import (
     VesselRead,
     VesselIdentityCreate,
     VesselIdentityRead,
+
+from .models import (
+    Vessel,
+    VesselIdentity,
+    VesselCertificate,
+    VesselSurvey,
+    VesselMemorandum,
 )
 
 __all__ = [
@@ -33,4 +40,7 @@ __all__ = [
     "VesselRead",
     "VesselIdentityCreate",
     "VesselIdentityRead",
+    "VesselCertificate",
+    "VesselSurvey",
+    "VesselMemorandum",
 ]

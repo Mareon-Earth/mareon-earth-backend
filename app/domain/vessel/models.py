@@ -1,128 +1,631 @@
-from __future__ import annotations
+"""Vessel domain models."""
 
-from typing import TYPE_CHECKING
-
+from sqlalchemy import String, Integer, Date, Boolean, BigInteger, TIMESTAMP, text, ForeignKey, Numeric
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.db import Base
-import app.infrastructure.db.sa as sa
-from app.infrastructure.db.mixins import (
-    TimestampsMixin, UUIDPrimaryKeyMixin,
-    OrgScopedMixin, CreatedByUserMixin,
-)
-
-from .enums import VesselType
-
-if TYPE_CHECKING:
-    from app.domain.organization.models import Organization
-    from app.domain.users.models import User
 
 
-class Vessel(UUIDPrimaryKeyMixin, TimestampsMixin, CreatedByUserMixin, OrgScopedMixin, Base):
+class Vessel(Base):
+    """Core vessel record."""
+    
     __tablename__ = "vessel"
 
-    name: sa.Mapped[str] = sa.mapped_column(
-        sa.Text,
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    org_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("organization.id", ondelete="CASCADE"),
         nullable=False,
-        default="Unnamed Vessel",
+    )
+    
+    created_by: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
-    __table_args__ = (
-        sa.Index("ix_vessel_org_id", "org_id"),
-        sa.Index("ix_vessel_created_by", "created_by"),
-        sa.Index("ix_vessel_name", "name"),
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    vessel_type: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
     )
 
-    organization: sa.Mapped["Organization"] = sa.relationship(
-        "Organization",
-        foreign_keys="Vessel.org_id",
-        lazy="selectin",
-    )
-    creator: sa.Mapped["User | None"] = sa.relationship(
-        "User",
-        foreign_keys="Vessel.created_by",
-        lazy="selectin",
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
     )
 
-    identity: sa.Mapped["VesselIdentity | None"] = sa.relationship(
-        "VesselIdentity",
+    # Relationships
+    organization: Mapped["Organization"] = relationship(back_populates="vessels")
+    created_by_user: Mapped["User"] = relationship()
+    identity: Mapped["VesselIdentity"] = relationship(
         back_populates="vessel",
-        uselist=False,
         cascade="all, delete-orphan",
-        passive_deletes=True,
+        uselist=False
     )
-
-    dimensions: sa.Mapped["VesselDimensions | None"] = sa.relationship(
-        "VesselDimensions",
+    dimensions: Mapped["VesselDimensions"] = relationship(
         back_populates="vessel",
-        uselist=False,
         cascade="all, delete-orphan",
-        passive_deletes=True,
+        uselist=False
+    )
+    tonnage: Mapped["VesselTonnage"] = relationship(
+        back_populates="vessel",
+        cascade="all, delete-orphan",
+        uselist=False
+    )
+    companies: Mapped["VesselCompany"] = relationship(
+        back_populates="vessel",
+        cascade="all, delete-orphan",
+        uselist=False  # One-to-one relationship
+    )
+    certificates: Mapped[list["VesselCertificate"]] = relationship(
+        back_populates="vessel",
+        cascade="all, delete-orphan"
+    )
+    surveys: Mapped[list["VesselSurvey"]] = relationship(
+        back_populates="vessel",
+        cascade="all, delete-orphan"
+    )
+    memoranda: Mapped[list["VesselMemorandum"]] = relationship(
+        back_populates="vessel",
+        cascade="all, delete-orphan"
+    )
+    conditions_of_class: Mapped[list["VesselConditionOfClass"]] = relationship(
+        back_populates="vessel",
+        cascade="all, delete-orphan"
+    )
+    machinery_items: Mapped[list["VesselMachineryItem"]] = relationship(
+        back_populates="vessel",
+        cascade="all, delete-orphan"
+    )
+    hull_items: Mapped[list["VesselHullItem"]] = relationship(
+        back_populates="vessel",
+        cascade="all, delete-orphan"
+    )
+    documents: Mapped[list["Document"]] = relationship(
+        secondary="vessel_document",
+        back_populates="vessels"
     )
 
 
-class VesselIdentity(TimestampsMixin, Base):
+class VesselIdentity(Base):
+    """Detailed vessel identification, tonnage, and build information."""
+    
     __tablename__ = "vessel_identity"
 
-    vessel_id: sa.Mapped[str] = sa.mapped_column(
-        sa.String,
-        sa.ForeignKey("vessel.id", ondelete="CASCADE"),
+    id: Mapped[str] = mapped_column(
+        String,
         primary_key=True,
+        server_default=text("gen_random_uuid()"),
     )
 
-    imo_number: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
-    mmsi_number: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
-
-    call_sign: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
-    reported_name: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
-
-    vessel_type: sa.Mapped[VesselType] = sa.mapped_column(
-        sa.SAEnum(VesselType, name="vessel_type", native_enum=False),
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        unique=True,
         nullable=False,
-        server_default=sa.text(f"'{VesselType.OTHER.value}'"),
     )
 
-    flag_state: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
-    port_of_registry: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
+    # Identification
+    imo_number: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
+    mmsi_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    call_sign: Mapped[str | None] = mapped_column(String, nullable=True)
+    class_number: Mapped[str | None] = mapped_column(String, nullable=True)  # DNV distinctive_number / ABS class_number
+    official_number: Mapped[str | None] = mapped_column(String, nullable=True)  # ABS flag state registry number
+    vessel_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    flag_state: Mapped[str | None] = mapped_column(String, nullable=True)
+    port_of_registry: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    class_society: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
-    class_notation: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
+    # Class information
+    class_society: Mapped[str | None] = mapped_column(String, nullable=True)
+    class_notation: Mapped[str | None] = mapped_column(String, nullable=True)
+    operational_status: Mapped[str | None] = mapped_column(String, nullable=True)
+    previous_names: Mapped[str | None] = mapped_column(String, nullable=True)
+    equipment_letter: Mapped[str | None] = mapped_column(String, nullable=True)  # DNV
+    equipment_number: Mapped[str | None] = mapped_column(String, nullable=True)  # ABS
+    
+    # Class state (ABS-specific)
+    class_state: Mapped[str | None] = mapped_column(String, nullable=True)
+    other_state: Mapped[str | None] = mapped_column(String, nullable=True)
+    lifecycle_state: Mapped[str | None] = mapped_column(String, nullable=True)
+    dual_class: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    previous_class_society: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    __table_args__ = (
-        sa.UniqueConstraint("imo_number", name="uq_vessel_identity_imo_number"),
-        sa.UniqueConstraint("mmsi_number", name="uq_vessel_identity_mmsi_number"),
-        sa.Index("ix_vessel_identity_vessel_id", "vessel_id"),
-        sa.Index("ix_vessel_identity_imo_number", "imo_number"),
-        sa.Index("ix_vessel_identity_mmsi_number", "mmsi_number"),
-        sa.Index("ix_vessel_identity_port_of_registry", "port_of_registry"),
-        sa.Index("ix_vessel_identity_vessel_type", "vessel_type"),
+    # Vessel type and description
+    vessel_description: Mapped[str | None] = mapped_column(String, nullable=True)  # ABS detailed description
+
+    # Build dates
+    keel_laid_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    building_contract_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    commissioning_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    delivery_date: Mapped[str | None] = mapped_column(Date, nullable=True)  # ABS
+
+    # Construction info (ABS-specific)
+    shipyard: Mapped[str | None] = mapped_column(String, nullable=True)
+    hull_number: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Regulatory categories (ABS-specific)
+    solas_category: Mapped[str | None] = mapped_column(String, nullable=True)
+    marpol_category: Mapped[str | None] = mapped_column(String, nullable=True)
+    ibc_igc_category: Mapped[str | None] = mapped_column(String, nullable=True)
+    ism_category: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Additional notations and restrictions (ABS-specific)
+    additional_notations: Mapped[str | None] = mapped_column(String, nullable=True)
+    service_restrictions: Mapped[str | None] = mapped_column(String, nullable=True)
+    record_comments: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Freeboard (ABS-specific - from Active row only)
+    freeboard_assignment: Mapped[str | None] = mapped_column(String, nullable=True)
+    freeboard_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    freeboard_displacement: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    freeboard_deadweight: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    freeboard_calculated: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    freeboard_state: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # DNV-specific fields
+    tanks_and_spaces_annual: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # ABS condition status flags
+    conditions_of_class_reported: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    statutory_conditions_reported: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    special_recommendations_reported: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    special_additional_requirements_reported: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
     )
 
-    vessel: sa.Mapped["Vessel"] = sa.relationship(
-        "Vessel",
-        back_populates="identity",
-        foreign_keys=[vessel_id],
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
     )
 
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="identity")
 
-class VesselDimensions(TimestampsMixin, Base):
+
+class VesselDimensions(Base):
+    """Vessel physical dimensions."""
+    
     __tablename__ = "vessel_dimensions"
 
-    vessel_id: sa.Mapped[str] = sa.mapped_column(
-        sa.String,
-        sa.ForeignKey("vessel.id", ondelete="CASCADE"),
+    id: Mapped[str] = mapped_column(
+        String,
         primary_key=True,
+        server_default=text("gen_random_uuid()"),
     )
 
-    loa_m: sa.Mapped[float | None] = sa.mapped_column(sa.Float, nullable=True)
-    lbp_m: sa.Mapped[float | None] = sa.mapped_column(sa.Float, nullable=True)
-    breadth_moulded_m: sa.Mapped[float | None] = sa.mapped_column(sa.Float, nullable=True)
-    depth_moulded_m: sa.Mapped[float | None] = sa.mapped_column(sa.Float, nullable=True)
-
-    __table_args__ = (
-        sa.Index("ix_vessel_dimensions_vessel_id", "vessel_id"),
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
     )
 
-    vessel: sa.Mapped["Vessel"] = sa.relationship(
-        "Vessel",
-        back_populates="dimensions",
-        foreign_keys=[vessel_id],
+    # Principal dimensions (in meters)
+    length_overall_m: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    length_between_perpendiculars: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    breadth_moulded_m: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    depth_moulded_m: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    summer_draft_m: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
     )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="dimensions")
+
+
+class VesselTonnage(Base):
+    """Vessel tonnage information."""
+    
+    __tablename__ = "vessel_tonnage"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
+
+    # Standard tonnage
+    gross_tonnage: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gross_tonnage_pre69: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    net_tonnage: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    deadweight_tonnage: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Suez Canal tonnage (ABS-specific)
+    suez_gross_tonnage: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    suez_net_tonnage: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="tonnage")
+
+
+class VesselCompany(Base):
+    """Vessel company relationships (owner/manager/doc holder) - single row per vessel."""
+    
+    __tablename__ = "vessel_company"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        unique=True,  # One row per vessel
+        nullable=False,
+    )
+
+    # Owner information
+    owner_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    owner_company_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    owner_address: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Manager information
+    manager_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    manager_company_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    manager_address: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # DOC Holder information (ABS-specific)
+    doc_holder_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    doc_holder_company_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    doc_holder_address: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # ISM Manager information (ABS-specific)
+    ism_manager_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    ism_manager_address: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="companies")
+
+
+class VesselCertificate(Base):
+    """Vessel certificates."""
+    
+    __tablename__ = "vessel_certificate"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    document_id: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("document.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    code: Mapped[str | None] = mapped_column(String, nullable=True)
+    category: Mapped[str | None] = mapped_column(String, nullable=True)  # 'class' | 'statutory'
+    certificate_type_detail: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    issue_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    expiry_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    issue_location: Mapped[str | None] = mapped_column(String, nullable=True)
+    issuing_authority: Mapped[str | None] = mapped_column(String, nullable=True)
+    status: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="certificates")
+    document: Mapped["Document"] = relationship()
+
+
+class VesselSurvey(Base):
+    """Vessel surveys."""
+    
+    __tablename__ = "vessel_survey"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    document_id: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("document.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    code: Mapped[str | None] = mapped_column(String, nullable=True)
+    category: Mapped[str | None] = mapped_column(String, nullable=True)  # 'class' | 'statutory'
+    survey_type: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    last_survey_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    last_survey_location: Mapped[str | None] = mapped_column(String, nullable=True)
+    next_survey_from: Mapped[str | None] = mapped_column(Date, nullable=True)
+    next_survey_due: Mapped[str | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    issuing_authority: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="surveys")
+    document: Mapped["Document"] = relationship()
+
+
+class VesselMemorandum(Base):
+    """Vessel memoranda."""
+    
+    __tablename__ = "vessel_memorandum"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    document_id: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("document.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    memo_reference: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str | None] = mapped_column(String, nullable=True)
+    content: Mapped[str] = mapped_column(String, nullable=False)
+
+    issued_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    issued_location: Mapped[str | None] = mapped_column(String, nullable=True)
+    issuing_authority: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="memoranda")
+    document: Mapped["Document"] = relationship()
+
+
+class VesselConditionOfClass(Base):
+    """Vessel conditions of class."""
+    
+    __tablename__ = "vessel_condition_of_class"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    document_id: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("document.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    coc_reference: Mapped[str | None] = mapped_column(String, nullable=True)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    coc_type: Mapped[str] = mapped_column(String, nullable=False)  # 'condition' | 'recommendation'
+    category: Mapped[str | None] = mapped_column(String, nullable=True)
+    status: Mapped[str] = mapped_column(String, nullable=False)  # 'OPEN' | 'CLOSED'
+
+    issued_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    due_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    closed_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    issuing_authority: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="conditions_of_class")
+    document: Mapped["Document"] = relationship()
+
+
+class VesselMachineryItem(Base):
+    """Vessel machinery items for detailed tracking."""
+    
+    __tablename__ = "vessel_machinery_item"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    document_id: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("document.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    category: Mapped[str | None] = mapped_column(String, nullable=True)
+    code: Mapped[str | None] = mapped_column(String, nullable=True)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    last_survey_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    next_survey_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="machinery_items")
+    document: Mapped["Document"] = relationship()
+
+
+class VesselHullItem(Base):
+    """Vessel hull items for detailed tracking."""
+    
+    __tablename__ = "vessel_hull_item"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+
+    vessel_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("vessel.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    document_id: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("document.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    category: Mapped[str | None] = mapped_column(String, nullable=True)
+    code: Mapped[str | None] = mapped_column(String, nullable=True)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    last_survey_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    next_survey_date: Mapped[str | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    updated_at: Mapped[str] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    # Relationships
+    vessel: Mapped["Vessel"] = relationship(back_populates="hull_items")
+    document: Mapped["Document"] = relationship()
