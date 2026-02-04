@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from pydantic import Field
 
-from pydantic import Field, field_validator
-
-from app.domain._shared import RequestSchema, ResponseSchema, strip_or_none
-from .enums import VesselType
+from app.domain._shared import RequestSchema, ResponseSchema
+from app.domain.vessel.enums import VesselType
 
 
 class VesselIdentityCreate(RequestSchema):
@@ -52,25 +50,7 @@ class VesselIdentityCreate(RequestSchema):
         description="Class notation with all symbols preserved verbatim (e.g., ✠1A1 or ⊕100A1). Do not normalize unicode.",
     )
 
-class VesselCreate(RequestSchema):
-    """
-    Client payload for creating a vessel.
-    org_id + created_by should come from auth/context, not from the client.
-    """
 
-    name: str = Field(default="Unnamed Vessel", min_length=1)
-
-    identity: VesselIdentityCreate | None = None
-    dimensions: VesselDimensionsCreate | None = None
-
-    @field_validator("name", mode="before")
-    @classmethod
-    def normalize_name(cls, v: Any) -> str:
-        v = strip_or_none(v)
-        return v or "Unnamed Vessel"
-
-
-# Optional read schemas (useful for FastAPI response_model)
 class VesselIdentityRead(ResponseSchema):
     vessel_id: str
 
@@ -86,52 +66,6 @@ class VesselIdentityRead(ResponseSchema):
 
     class_society: str | None
     class_notation: str | None
-
-    created_at: datetime
-    updated_at: datetime
-
-
-class VesselRead(ResponseSchema):
-    id: str
-    org_id: str
-    created_by: str | None
-
-    name: str
-
-    created_at: datetime
-    updated_at: datetime
-
-    identity: VesselIdentityRead | None = None
-    dimensions: VesselDimensionsRead | None = None
-
-class VesselDimensionsCreate(RequestSchema):
-    """Vessel physical dimensions."""
-
-    loa_m: float | None = Field(
-        None,
-        description="Length overall (LOA) in meters.",
-    )
-    lbp_m: float | None = Field(
-        None,
-        description="Length between perpendiculars (LBP) in meters.",
-    )
-    breadth_moulded_m: float | None = Field(
-        None,
-        description="Moulded breadth in meters.",
-    )
-    depth_moulded_m: float | None = Field(
-        None,
-        description="Moulded depth in meters.",
-    )
-
-    
-class VesselDimensionsRead(ResponseSchema):
-    vessel_id: str
-
-    loa_m: float | None
-    lbp_m: float | None
-    breadth_moulded_m: float | None
-    depth_moulded_m: float | None
 
     created_at: datetime
     updated_at: datetime
