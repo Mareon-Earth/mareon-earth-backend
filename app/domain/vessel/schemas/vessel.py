@@ -8,7 +8,7 @@ from pydantic import Field, field_validator
 from app.domain._shared import RequestSchema, ResponseSchema, strip_or_none
 from .identity import VesselIdentityCreate, VesselIdentityRead
 from .dimensions import VesselDimensionsCreate, VesselDimensionsRead
-
+from .certificate import VesselCertificateBase, VesselCertificateRead
 
 class VesselCreate(RequestSchema):
     """
@@ -20,6 +20,7 @@ class VesselCreate(RequestSchema):
 
     identity: VesselIdentityCreate | None = None
     dimensions: VesselDimensionsCreate | None = None
+    certificates: list[VesselCertificateBase] = Field(default_factory=list)
 
     @field_validator("name", mode="before")
     @classmethod
