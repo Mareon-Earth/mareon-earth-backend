@@ -55,8 +55,6 @@ async def get_auth_context(
             except Exception as e:
                 print(f"[Auth] Failed to sync user metadata: {e}")
 
-    print(f"[Auth] Resolved User ID {internal_user_id} from {user_source}")
-
     # Resolve Internal Org ID
     org_metadata = payload.get("org_public_metadata") or {}
     if not isinstance(org_metadata, dict):
@@ -78,8 +76,6 @@ async def get_auth_context(
                 await update_organization_metadata(org_id, public_metadata={"org_id": org.id})
             except Exception as e:
                 print(f"[Auth] Failed to sync org metadata: {e}")
-
-    print(f"[Auth] Resolved Org ID {internal_org_id} from {org_source}")
 
     return AuthContext(
         user_id=user_id,
