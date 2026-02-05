@@ -3,28 +3,33 @@ from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import AuthContext
+from app.domain._shared import PaginatedResponse
 from app.domain._shared.types import OrganizationId, UserId, VesselId
 from app.domain.organization.repository.protocols import OrganizationRepositoryProtocol
 from app.domain.users.repository.protocols import UserRepositoryProtocol
 from app.domain.vessel.exceptions import VesselAlreadyExistsError, VesselNotFoundError
-from app.domain.vessel.models import Vessel, VesselIdentity
+from app.domain.vessel.models import Vessel, VesselIdentity, VesselDimensions
 from app.domain.vessel.repository.protocols import (
     VesselIdentityRepositoryProtocol,
     VesselRepositoryProtocol,
+    VesselDimensionsRepositoryProtocol,
 )
-from app.domain.vessel.schemas import VesselCreate, VesselIdentityRead, VesselRead
+from app.domain.vessel.schemas import (
+    VesselCreate,
+    VesselRead,
+    VesselUpdate,
+    VesselListParams,
+    VesselIdentityCreate,
+    VesselIdentityRead,
+    VesselIdentityUpdate,
+    VesselDimensionsCreate,
+    VesselDimensionsRead,
+    VesselDimensionsUpdate,
+)
 from app.domain.vessel.service.protocols import VesselServiceProtocol
 
 
 class VesselService(VesselServiceProtocol):
-    """
-    Application service for vessel flows.
-
-    Pattern matches DocumentService:
-    - request-scoped
-    - commits on success
-    - rollbacks on any exception
-    """
 
     def __init__(
         self,
@@ -32,6 +37,7 @@ class VesselService(VesselServiceProtocol):
         db: AsyncSession,
         vessels: VesselRepositoryProtocol,
         identities: VesselIdentityRepositoryProtocol,
+        dimensions: VesselDimensionsRepositoryProtocol,
         users: UserRepositoryProtocol,
         orgs: OrganizationRepositoryProtocol,
         ctx: AuthContext,
@@ -39,16 +45,20 @@ class VesselService(VesselServiceProtocol):
         self._db = db
         self._vessels = vessels
         self._identities = identities
+        self._dimensions = dimensions
         self._users = users
         self._orgs = orgs
         self._ctx = ctx
+
+    # ───────────────────────────────────────────────────────────────────
+    # Core CRUD
+    # ───────────────────────────────────────────────────────────────────
 
     async def create_vessel(self, payload: VesselCreate) -> VesselRead:
         try:
             org_id = await self._resolve_org_id()
             user_id = await self._resolve_user_id()
 
-            # 1) Uniqueness checks (only if provided)
             if payload.identity:
                 if payload.identity.imo_number:
                     existing = await self._identities.get_by_imo_number(payload.identity.imo_number)
@@ -56,7 +66,6 @@ class VesselService(VesselServiceProtocol):
                         raise VesselAlreadyExistsError(
                             metadata={"field": "imo_number", "value": payload.identity.imo_number}
                         )
-
                 if payload.identity.mmsi_number:
                     existing = await self._identities.get_by_mmsi_number(payload.identity.mmsi_number)
                     if existing is not None:
@@ -64,15 +73,10 @@ class VesselService(VesselServiceProtocol):
                             metadata={"field": "mmsi_number", "value": payload.identity.mmsi_number}
                         )
 
-            # 2) Build ORM objects
-            vessel = Vessel(
-                org_id=org_id,
-                created_by=user_id,
-                name=payload.name,
-            )
+            vessel = Vessel(org_id=org_id, created_by=user_id, name=payload.name)
 
             if payload.identity is not None:
-                ident = VesselIdentity(
+                vessel.identity = VesselIdentity(
                     imo_number=payload.identity.imo_number,
                     mmsi_number=payload.identity.mmsi_number,
                     call_sign=payload.identity.call_sign,
@@ -83,41 +87,191 @@ class VesselService(VesselServiceProtocol):
                     class_society=payload.identity.class_society,
                     class_notation=payload.identity.class_notation,
                 )
-                vessel.identity = ident
 
-            # 3) Persist
+            if payload.dimensions is not None:
+                vessel.dimensions = VesselDimensions(
+                    loa_m=payload.dimensions.loa_m,
+                    lbp_m=payload.dimensions.lbp_m,
+                    breadth_moulded_m=payload.dimensions.breadth_moulded_m,
+                    depth_moulded_m=payload.dimensions.depth_moulded_m,
+                )
+
             await self._vessels.create(vessel)
-
-            # 4) Commit
             await self._db.commit()
-
-            # 5) Return read schema (from ORM)
             return self._to_vessel_read(vessel)
-
         except Exception:
             await self._db.rollback()
             raise
 
     async def get_vessel(self, vessel_id: VesselId) -> VesselRead:
-        # (Optional) you may want org scoping here, but that depends on your auth model.
         vessel = await self._vessels.get_by_id(vessel_id)
         if vessel is None:
             raise VesselNotFoundError()
-
         return self._to_vessel_read(vessel)
 
-    # -----------------------
-    # helpers
-    # -----------------------
+    async def list_vessels(self, params: VesselListParams) -> PaginatedResponse[VesselRead]:
+        try:
+            org_id = await self._resolve_org_id()
+            offset = (params.page - 1) * params.page_size
+            vessels, total = await self._vessels.list_by_org(org_id, offset, params.page_size)
+            return PaginatedResponse(
+                items=[self._to_vessel_read(v) for v in vessels],
+                total=total,
+                page=params.page,
+                page_size=params.page_size,
+            )
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    async def update_vessel(self, vessel_id: VesselId, payload: VesselUpdate) -> VesselRead:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None:
+                raise VesselNotFoundError()
+
+            if payload.name is not None:
+                vessel.name = payload.name
+
+            await self._vessels.update(vessel)
+            await self._db.commit()
+            return self._to_vessel_read(vessel)
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    async def delete_vessel(self, vessel_id: VesselId) -> None:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None:
+                raise VesselNotFoundError()
+            await self._vessels.delete(vessel_id)
+            await self._db.commit()
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    # ───────────────────────────────────────────────────────────────────
+    # Identity management
+    # ───────────────────────────────────────────────────────────────────
+
+    async def upsert_identity(self, vessel_id: VesselId, payload: VesselIdentityCreate) -> VesselIdentityRead:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None:
+                raise VesselNotFoundError()
+
+            if vessel.identity is None:
+                vessel.identity = VesselIdentity(vessel_id=vessel_id)
+
+            vessel.identity.imo_number = payload.imo_number
+            vessel.identity.mmsi_number = payload.mmsi_number
+            vessel.identity.call_sign = payload.call_sign
+            vessel.identity.reported_name = payload.reported_name
+            vessel.identity.vessel_type = payload.vessel_type
+            vessel.identity.flag_state = payload.flag_state
+            vessel.identity.port_of_registry = payload.port_of_registry
+            vessel.identity.class_society = payload.class_society
+            vessel.identity.class_notation = payload.class_notation
+
+            await self._db.flush()
+            await self._db.commit()
+            return self._to_identity_read(vessel.identity)
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    async def update_identity(self, vessel_id: VesselId, payload: VesselIdentityUpdate) -> VesselIdentityRead:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None or vessel.identity is None:
+                raise VesselNotFoundError()
+
+            for field, value in payload.model_dump(exclude_unset=True).items():
+                setattr(vessel.identity, field, value)
+
+            await self._identities.update(vessel.identity)
+            await self._db.commit()
+            return self._to_identity_read(vessel.identity)
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    async def delete_identity(self, vessel_id: VesselId) -> None:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None:
+                raise VesselNotFoundError()
+            if vessel.identity is not None:
+                await self._identities.delete(vessel_id)
+            await self._db.commit()
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    # ───────────────────────────────────────────────────────────────────
+    # Dimensions management
+    # ───────────────────────────────────────────────────────────────────
+
+    async def upsert_dimensions(self, vessel_id: VesselId, payload: VesselDimensionsCreate) -> VesselDimensionsRead:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None:
+                raise VesselNotFoundError()
+
+            if vessel.dimensions is None:
+                vessel.dimensions = VesselDimensions(vessel_id=vessel_id)
+
+            vessel.dimensions.loa_m = payload.loa_m
+            vessel.dimensions.lbp_m = payload.lbp_m
+            vessel.dimensions.breadth_moulded_m = payload.breadth_moulded_m
+            vessel.dimensions.depth_moulded_m = payload.depth_moulded_m
+
+            await self._db.flush()
+            await self._db.commit()
+            return self._to_dimensions_read(vessel.dimensions)
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    async def update_dimensions(self, vessel_id: VesselId, payload: VesselDimensionsUpdate) -> VesselDimensionsRead:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None or vessel.dimensions is None:
+                raise VesselNotFoundError()
+
+            for field, value in payload.model_dump(exclude_unset=True).items():
+                setattr(vessel.dimensions, field, value)
+
+            await self._dimensions.update(vessel.dimensions)
+            await self._db.commit()
+            return self._to_dimensions_read(vessel.dimensions)
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    async def delete_dimensions(self, vessel_id: VesselId) -> None:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None:
+                raise VesselNotFoundError()
+            if vessel.dimensions is not None:
+                await self._dimensions.delete(vessel_id)
+            await self._db.commit()
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    # ───────────────────────────────────────────────────────────────────
+    # Helpers
+    # ───────────────────────────────────────────────────────────────────
 
     async def _resolve_org_id(self) -> OrganizationId:
         org_id = self._ctx.internal_org_id
         if org_id:
             return org_id
-
         org = await self._orgs.get_by_clerk_id(clerk_org_id=self._ctx.organization_id)
         if not org:
-            # TODO: create OrganizationNotFoundError and use it here
             raise VesselNotFoundError(metadata={"reason": "org_not_found"})
         return org.id
 
@@ -125,30 +279,14 @@ class VesselService(VesselServiceProtocol):
         user_id = self._ctx.internal_user_id
         if user_id:
             return user_id
-
         user = await self._users.get_by_clerk_id(clerk_user_id=self._ctx.user_id)
         if not user:
-            # TODO: create UserNotFoundError and use it here
             raise VesselNotFoundError(metadata={"reason": "user_not_found"})
         return user.id
 
     def _to_vessel_read(self, vessel: Vessel) -> VesselRead:
-        identity = None
-        if vessel.identity is not None:
-            identity = VesselIdentityRead(
-                vessel_id=vessel.identity.vessel_id,
-                imo_number=vessel.identity.imo_number,
-                mmsi_number=vessel.identity.mmsi_number,
-                call_sign=vessel.identity.call_sign,
-                reported_name=vessel.identity.reported_name,
-                vessel_type=vessel.identity.vessel_type,
-                flag_state=vessel.identity.flag_state,
-                port_of_registry=vessel.identity.port_of_registry,
-                class_society=vessel.identity.class_society,
-                class_notation=vessel.identity.class_notation,
-                created_at=vessel.identity.created_at,
-                updated_at=vessel.identity.updated_at,
-            )
+        identity = self._to_identity_read(vessel.identity) if vessel.identity else None
+        dimensions = self._to_dimensions_read(vessel.dimensions) if vessel.dimensions else None
 
         return VesselRead(
             id=vessel.id,
@@ -158,4 +296,32 @@ class VesselService(VesselServiceProtocol):
             created_at=vessel.created_at,
             updated_at=vessel.updated_at,
             identity=identity,
+            dimensions=dimensions,
+        )
+
+    def _to_identity_read(self, identity: VesselIdentity) -> VesselIdentityRead:
+        return VesselIdentityRead(
+            vessel_id=identity.vessel_id,
+            imo_number=identity.imo_number,
+            mmsi_number=identity.mmsi_number,
+            call_sign=identity.call_sign,
+            reported_name=identity.reported_name,
+            vessel_type=identity.vessel_type,
+            flag_state=identity.flag_state,
+            port_of_registry=identity.port_of_registry,
+            class_society=identity.class_society,
+            class_notation=identity.class_notation,
+            created_at=identity.created_at,
+            updated_at=identity.updated_at,
+        )
+
+    def _to_dimensions_read(self, dimensions: VesselDimensions) -> VesselDimensionsRead:
+        return VesselDimensionsRead(
+            vessel_id=dimensions.vessel_id,
+            loa_m=dimensions.loa_m,
+            lbp_m=dimensions.lbp_m,
+            breadth_moulded_m=dimensions.breadth_moulded_m,
+            depth_moulded_m=dimensions.depth_moulded_m,
+            created_at=dimensions.created_at,
+            updated_at=dimensions.updated_at,
         )

@@ -28,6 +28,13 @@ class VesselDimensionsBase(RequestSchema):
 class VesselDimensionsCreate(VesselDimensionsBase):
     ...
 
+class VesselDimensionsUpdate(RequestSchema):
+    """Partial update for vessel dimensions."""
+    loa_m: float | None = None
+    lbp_m: float | None = None
+    breadth_moulded_m: float | None = None
+    depth_moulded_m: float | None = None
+
 
 class VesselDimensionsRead(ResponseSchema):
     vessel_id: str

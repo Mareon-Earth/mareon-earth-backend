@@ -20,6 +20,7 @@ from app.domain.document.repository import (
 from app.domain.vessel.repository import (
     VesselRepository,
     VesselIdentityRepository,
+    VesselDimensionsRepository,
 )
 
 # ── Services & Protocols ──────────────────────────────────────────────────────
@@ -58,6 +59,9 @@ def _vessel_repo(db: AsyncSession) -> VesselRepository:
 
 def _vessel_identity_repo(db: AsyncSession) -> VesselIdentityRepository:
     return VesselIdentityRepository(db)
+
+def _vessel_dimensions_repo(db: AsyncSession) -> VesselDimensionsRepository:
+    return VesselDimensionsRepository(db)
 
 
 # ── Public dependencies (what routers should import) ──────────────────────────
@@ -125,9 +129,10 @@ def get_vessel_service(
 ) -> VesselServiceProtocol:
     return VesselService(
         db=db,
-        vessels=VesselRepository(db),
-        identities=VesselIdentityRepository(db),
-        users=UserRepository(db),
-        orgs=OrganizationRepository(db),
+        vessels=_vessel_repo(db),
+        identities=_vessel_identity_repo(db),
+        dimensions=_vessel_dimensions_repo(db),
+        users=_user_repo(db),
+        orgs=_org_repo(db),
         ctx=ctx,
     )

@@ -51,6 +51,19 @@ class VesselIdentityCreate(RequestSchema):
     )
 
 
+class VesselIdentityUpdate(RequestSchema):
+    """Partial update for vessel identity."""
+    imo_number: str | None = None
+    mmsi_number: str | None = None
+    call_sign: str | None = None
+    reported_name: str | None = None
+    vessel_type: VesselType | None = None
+    flag_state: str | None = None
+    port_of_registry: str | None = None
+    class_society: str | None = None
+    class_notation: str | None = None
+
+
 class VesselIdentityRead(ResponseSchema):
     vessel_id: str
 

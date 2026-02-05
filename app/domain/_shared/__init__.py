@@ -12,7 +12,7 @@ from .types import (
     VesselId,
 )
 from .normalize import strip_or_none
-from .schemas import RequestSchema, ResponseSchema
+from .schemas import RequestSchema, ResponseSchema, PaginationParams, PaginatedResponse
 
 __all__ = [
     "BaseRepository",
@@ -33,4 +33,6 @@ __all__ = [
     "strip_or_none",
     "RequestSchema",
     "ResponseSchema",
+    "PaginationParams",
+    "PaginatedResponse",
 ]
