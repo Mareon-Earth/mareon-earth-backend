@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from app.domain._shared.types import DateTime
 from app.infrastructure.db import Base
 import app.infrastructure.db.sa as sa
 from app.infrastructure.db.mixins import UUIDPrimaryKeyMixin, TimestampsMixin
@@ -46,6 +47,12 @@ class Document(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
 
     organization: sa.Mapped["Organization"] = sa.relationship("Organization", foreign_keys=[org_id])
     creator: sa.Mapped["User"] = sa.relationship("User", foreign_keys=[created_by])
+    files: sa.Mapped[list["DocumentFile"]] = sa.relationship(
+        "DocumentFile",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
 
 class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
@@ -63,11 +70,13 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         nullable=False,
     )
 
-    storage_path: sa.Mapped[str] = sa.mapped_column(sa.Text, nullable=False)
+    # Full GCS URI (gs://bucket/path). NULL until upload is confirmed via Pub/Sub.
+    source_uri: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
+
     original_name: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
     mime_type: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
     file_size_bytes: sa.Mapped[int | None] = sa.mapped_column(sa.BigInteger, nullable=True)
-    content_md5_b64: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=False)
+    content_md5_b64: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
 
     version_number: sa.Mapped[int] = sa.mapped_column(
         nullable=False,
@@ -84,14 +93,14 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         nullable=False,
         server_default=sa.text("true"),
     )
-    
+
     uploaded_by: sa.Mapped[str | None] = sa.mapped_column(
         sa.String,
         sa.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=True,
     )
 
-    uploaded_at: sa.Mapped[sa.DateTime] = sa.mapped_column(
+    uploaded_at: sa.Mapped[DateTime] = sa.mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
@@ -102,8 +111,22 @@ class DocumentFile(UUIDPrimaryKeyMixin, TimestampsMixin, Base):
         sa.Index("ix_document_file_document_id", "document_id"),
         sa.Index("ix_document_file_org_id", "org_id"),
         sa.Index("ix_document_file_is_latest", "is_latest"),
+        sa.Index(
+            "ix_document_file_uploaded",
+            "document_id",
+            postgresql_where=sa.text("source_uri IS NOT NULL"),
+        ),
     )
 
-    document: sa.Mapped["Document"] = sa.relationship("Document", foreign_keys=[document_id])
+    document: sa.Mapped["Document"] = sa.relationship(
+        "Document",
+        foreign_keys=[document_id],
+        back_populates="files",
+    )
     uploader: sa.Mapped["User"] = sa.relationship("User", foreign_keys=[uploaded_by])
     organization: sa.Mapped["Organization"] = sa.relationship("Organization", foreign_keys=[org_id])
+
+    @property
+    def is_uploaded(self) -> bool:
+        """True if the file has been successfully uploaded to GCS."""
+        return self.source_uri is not None

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from app.domain._shared.types import DateTime
 from pydantic import Field
 
 from app.domain._shared import RequestSchema, ResponseSchema
@@ -44,5 +44,5 @@ class VesselDimensionsRead(ResponseSchema):
     breadth_moulded_m: float | None
     depth_moulded_m: float | None
 
-    created_at: datetime
-    updated_at: datetime
+    created_at: DateTime
+    updated_at: DateTime

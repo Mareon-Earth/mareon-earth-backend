@@ -17,23 +17,43 @@ from app.domain.document.exceptions import (
 from app.domain.document.schemas import (
     InitiateDocumentUploadRequest,
     InitiateDocumentUploadResponse,
+    DocumentSummary,
+    DocumentDetailResponse,
+    DocumentFileResponse,
+    DocumentListResponse,
+    DocumentListFilters,
+    DocumentUpdateRequest,
+    DownloadUrlResponse,
 )
 
 __all__ = [
+    # Models
     "Document",
     "DocumentFile",
-    "DocumentRepositoryProtocol",
-    "DocumentFileRepositoryProtocol",
-    "DocumentServiceProtocol",
+    # Enums
     "DocumentType",
     "DocumentContentType",
+    # Repositories
+    "DocumentRepositoryProtocol",
+    "DocumentFileRepositoryProtocol",
     "DocumentRepository",
     "DocumentFileRepository",
+    # Service
+    "DocumentServiceProtocol",
+    # Exceptions
     "DocumentNotFoundError",
     "DocumentFileNotFoundError",
     "DocumentAlreadyExistsError",
     "DocumentFileProcessingError",
     "InvalidDocumentFileError",
+    # Schemas
     "InitiateDocumentUploadRequest",
     "InitiateDocumentUploadResponse",
+    "DocumentSummary",
+    "DocumentDetailResponse",
+    "DocumentFileResponse",
+    "DocumentListResponse",
+    "DocumentListFilters",
+    "DocumentUpdateRequest",
+    "DownloadUrlResponse",
 ]

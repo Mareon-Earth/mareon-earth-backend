@@ -27,8 +27,7 @@ class GCSStorage:
             # Get ADC creds (Cloud Run uses metadata service) + ensure proper scopes if needed
             creds, detected_project = google.auth.default(
                 scopes=["https://www.googleapis.com/auth/cloud-platform"]
-            )  # returns google.auth.credentials.Credentials :contentReference[oaicite:6]{index=6}
-
+            )
             self._credentials: Credentials = cast(Credentials, creds)
             self._auth_request = Request()
 
@@ -45,7 +44,7 @@ class GCSStorage:
     async def _get_access_token(self) -> str:
         """
         Refresh ADC credentials (in a thread) and return the access token.
-        Pylance note: Credentials.refresh(request) exists on Credentials. :contentReference[oaicite:7]{index=7}
+        Pylance note: Credentials.refresh(request) exists on Credentials.
         """
         try:
             # Refresh if needed (also covers creds.token is None)
@@ -60,12 +59,19 @@ class GCSStorage:
         except Exception as e:
             raise StorageAuthenticationError(f"Failed to refresh GCP credentials: {e}")
 
-    async def generate_signed_url(
-        self, path: str, expiration: timedelta = timedelta(hours=1)
+    async def generate_download_url(
+        self,
+        path: str,
+        expiration: timedelta = timedelta(hours=1),
+        filename: str | None = None,
     ) -> str:
         try:
             blob = self.bucket.blob(path)
             access_token = await self._get_access_token()
+
+            response_disposition = None
+            if filename:
+                response_disposition = f'attachment; filename="{filename}"'
 
             url = await asyncio.to_thread(
                 blob.generate_signed_url,
@@ -74,11 +80,12 @@ class GCSStorage:
                 method="GET",
                 service_account_email=self._SIGNER_SERVICE_ACCOUNT_EMAIL,
                 access_token=access_token,
+                response_disposition=response_disposition,
             )
             return url
 
         except Exception as e:
-            raise SignedUrlError(f"Failed to generate signed URL for {path}: {e}")
+            raise SignedUrlError(f"Failed to generate download URL for {path}: {e}")
 
     async def generate_upload_url(
         self,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from app.domain._shared.types import DateTime
 from typing import Any
 
 from pydantic import Field, field_validator
@@ -11,10 +11,7 @@ from .dimensions import VesselDimensionsCreate, VesselDimensionsRead
 from .certificate import VesselCertificateBase, VesselCertificateRead
 
 class VesselCreate(RequestSchema):
-    """
-    Client payload for creating a vessel.
-    org_id + created_by should come from auth/context, not from the client.
-    """
+    """Client payload for creating a vessel."""
 
     name: str = Field(default="Unnamed Vessel", min_length=1)
 
@@ -45,8 +42,8 @@ class VesselRead(ResponseSchema):
 
     name: str
 
-    created_at: datetime
-    updated_at: datetime
+    created_at: DateTime
+    updated_at: DateTime
 
     identity: VesselIdentityRead | None = None
     dimensions: VesselDimensionsRead | None = None

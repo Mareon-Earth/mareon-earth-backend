@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import TYPE_CHECKING
 
+from app.domain._shared.types import Date
 from app.infrastructure.db import Base
 import app.infrastructure.db.sa as sa
 from app.infrastructure.db.mixins import (
@@ -43,8 +43,8 @@ class VesselCertificate(
 
     issuer: sa.Mapped[str | None] = sa.mapped_column(sa.Text, nullable=True)
 
-    issued_date: sa.Mapped[sa.Date | None] = sa.mapped_column(sa.Date, nullable=True)
-    expiry_date: sa.Mapped[sa.Date | None] = sa.mapped_column(sa.Date, nullable=True)
+    issued_date: sa.Mapped[Date | None] = sa.mapped_column(sa.Date, nullable=True)
+    expiry_date: sa.Mapped[Date | None] = sa.mapped_column(sa.Date, nullable=True)
 
     status: sa.Mapped[CertificateStatus] = sa.mapped_column(
         sa.SAEnum(CertificateStatus, name="certificate_status", native_enum=False),

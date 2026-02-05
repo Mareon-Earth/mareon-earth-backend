@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from app.domain._shared.types import DateTime
 
 
 class UserBase(BaseModel):
@@ -29,8 +29,8 @@ class UserUpdate(BaseModel):
 class UserRead(UserBase):
     id: str
     is_active: bool
-    created_at: datetime
-    updated_at: datetime
+    created_at: DateTime
+    updated_at: DateTime
 
     class Config:
         from_attributes = True

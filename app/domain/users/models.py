@@ -1,4 +1,4 @@
-from sqlalchemy import String, Boolean, TIMESTAMP, text
+from sqlalchemy import String, Boolean, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.infrastructure.db import Base
 from app.infrastructure.db.mixins import TimestampsMixin

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from app.domain._shared.types import DateTime
 from app.domain.organization.models import OrganizationRole
 
 
@@ -23,8 +23,8 @@ class OrganizationUpdate(BaseModel):
 
 class OrganizationRead(OrganizationBase):
     id: str
-    created_at: datetime
-    updated_at: datetime
+    created_at: DateTime
+    updated_at: DateTime
 
     class Config:
         from_attributes = True
@@ -45,8 +45,8 @@ class OrganizationMemberUpdate(BaseModel):
 
 
 class OrganizationMemberRead(OrganizationMemberBase):
-    created_at: datetime
-    updated_at: datetime
+    created_at: DateTime
+    updated_at: DateTime
 
     class Config:
         from_attributes = True

@@ -1,13 +1,16 @@
-from typing import Protocol
+from typing import Protocol, Union
 from datetime import timedelta
 
 
 class StorageProtocol(Protocol):
     """Protocol defining the interface for cloud storage operations."""
 
-    async def generate_signed_url(
-            self, path: str, 
-            expiration: timedelta = timedelta(hours=1)) -> str:
+    async def generate_download_url(
+        self,
+        path: str,
+        expiration: timedelta = timedelta(hours=1),
+        filename: str | None = None,
+    ) -> str:
         """Generate a signed URL for reading a file."""
         ...
         
@@ -15,8 +18,9 @@ class StorageProtocol(Protocol):
         self,
         path: str,
         content_type: str,
-        content_md5: str,
-        expiration: timedelta = timedelta(hours=1)) -> str:
+        content_md5: str | None,
+        expiration: timedelta = timedelta(hours=1),
+    ) -> str:
         """Generate a signed URL for uploading a file."""
         ...
 
