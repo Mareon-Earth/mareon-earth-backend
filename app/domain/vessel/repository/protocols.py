@@ -3,8 +3,8 @@ from __future__ import annotations
 from abc import abstractmethod
 
 from app.domain._shared.repository import BaseRepository
-from app.domain._shared.types import VesselId, OrganizationId
-from app.domain.vessel.models import Vessel, VesselIdentity, VesselDimensions
+from app.domain._shared.types import VesselId, OrganizationId, CertificateId
+from app.domain.vessel.models import Vessel, VesselIdentity, VesselDimensions, VesselCertificate
 
 
 class VesselRepositoryProtocol(BaseRepository[Vessel, VesselId]):
@@ -37,3 +37,13 @@ class VesselDimensionsRepositoryProtocol(BaseRepository[VesselDimensions, Vessel
 
     @abstractmethod
     async def get_by_vessel_id(self, vessel_id: VesselId) -> VesselDimensions | None: ...
+
+
+class VesselCertificateRepositoryProtocol(BaseRepository[VesselCertificate, CertificateId]):
+    @abstractmethod
+    async def update(self, certificate: VesselCertificate) -> VesselCertificate: ...
+
+    @abstractmethod
+    async def list_by_vessel(
+        self, vessel_id: VesselId, offset: int = 0, limit: int = 20
+    ) -> tuple[list[VesselCertificate], int]: ...

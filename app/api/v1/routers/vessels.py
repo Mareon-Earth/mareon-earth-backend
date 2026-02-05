@@ -13,6 +13,9 @@ from app.domain.vessel.schemas import (
     VesselDimensionsCreate,
     VesselDimensionsRead,
     VesselDimensionsUpdate,
+    VesselCertificateBase,
+    VesselCertificateRead,
+    VesselCertificateUpdate,
 )
 from app.domain.vessel.service.protocols import VesselServiceProtocol
 
@@ -129,3 +132,51 @@ async def delete_dimensions(
     svc: VesselServiceProtocol = Depends(get_vessel_service),
 ):
     await svc.delete_dimensions(vessel_id=vessel_id)
+
+# ───────────────────────────────────────────────────────────────────
+# Certificate management
+# ───────────────────────────────────────────────────────────────────
+
+@router.get("/{vessel_id}/certificates", response_model=PaginatedResponse[VesselCertificateRead])
+async def list_certificates(
+    vessel_id: str,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    svc: VesselServiceProtocol = Depends(get_vessel_service),
+):
+    return await svc.list_certificates(vessel_id=vessel_id, page=page, page_size=page_size)
+
+@router.post("/{vessel_id}/certificates", response_model=VesselCertificateRead, status_code=201)
+async def create_certificate(
+    vessel_id: str,
+    request: VesselCertificateBase,
+    svc: VesselServiceProtocol = Depends(get_vessel_service),
+):
+    return await svc.create_certificate(vessel_id=vessel_id, payload=request)
+
+@router.get("/{vessel_id}/certificates/{certificate_id}", response_model=VesselCertificateRead)
+async def get_certificate(
+    vessel_id: str,
+    certificate_id: str,
+    svc: VesselServiceProtocol = Depends(get_vessel_service),
+):
+    return await svc.get_certificate(vessel_id=vessel_id, certificate_id=certificate_id)
+
+@router.patch("/{vessel_id}/certificates/{certificate_id}", response_model=VesselCertificateRead)
+async def update_certificate(
+    vessel_id: str,
+    certificate_id: str,
+    request: VesselCertificateUpdate,
+    svc: VesselServiceProtocol = Depends(get_vessel_service),
+):
+    return await svc.update_certificate(
+        vessel_id=vessel_id, certificate_id=certificate_id, payload=request
+    )
+
+@router.delete("/{vessel_id}/certificates/{certificate_id}", status_code=204)
+async def delete_certificate(
+    vessel_id: str,
+    certificate_id: str,
+    svc: VesselServiceProtocol = Depends(get_vessel_service),
+):
+    await svc.delete_certificate(vessel_id=vessel_id, certificate_id=certificate_id)

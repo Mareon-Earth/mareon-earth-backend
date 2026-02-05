@@ -4,15 +4,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import AuthContext
 from app.domain._shared import PaginatedResponse
-from app.domain._shared.types import OrganizationId, UserId, VesselId
+from app.domain._shared.types import OrganizationId, UserId, VesselId, CertificateId
 from app.domain.organization.repository.protocols import OrganizationRepositoryProtocol
 from app.domain.users.repository.protocols import UserRepositoryProtocol
 from app.domain.vessel.exceptions import VesselAlreadyExistsError, VesselNotFoundError
-from app.domain.vessel.models import Vessel, VesselIdentity, VesselDimensions
+from app.domain.vessel.models import Vessel, VesselIdentity, VesselDimensions, VesselCertificate
 from app.domain.vessel.repository.protocols import (
     VesselIdentityRepositoryProtocol,
     VesselRepositoryProtocol,
     VesselDimensionsRepositoryProtocol,
+    VesselCertificateRepositoryProtocol,
 )
 from app.domain.vessel.schemas import (
     VesselCreate,
@@ -25,6 +26,9 @@ from app.domain.vessel.schemas import (
     VesselDimensionsCreate,
     VesselDimensionsRead,
     VesselDimensionsUpdate,
+    VesselCertificateBase,
+    VesselCertificateRead,
+    VesselCertificateUpdate,
 )
 from app.domain.vessel.service.protocols import VesselServiceProtocol
 
@@ -38,6 +42,7 @@ class VesselService(VesselServiceProtocol):
         vessels: VesselRepositoryProtocol,
         identities: VesselIdentityRepositoryProtocol,
         dimensions: VesselDimensionsRepositoryProtocol,
+        certificates: VesselCertificateRepositoryProtocol,
         users: UserRepositoryProtocol,
         orgs: OrganizationRepositoryProtocol,
         ctx: AuthContext,
@@ -46,6 +51,7 @@ class VesselService(VesselServiceProtocol):
         self._vessels = vessels
         self._identities = identities
         self._dimensions = dimensions
+        self._certificates = certificates
         self._users = users
         self._orgs = orgs
         self._ctx = ctx
@@ -263,6 +269,112 @@ class VesselService(VesselServiceProtocol):
             raise
 
     # ───────────────────────────────────────────────────────────────────
+    # Certificate management
+    # ───────────────────────────────────────────────────────────────────
+
+    async def list_certificates(
+        self, vessel_id: VesselId, page: int, page_size: int
+    ) -> PaginatedResponse[VesselCertificateRead]:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None:
+                raise VesselNotFoundError()
+
+            offset = (page - 1) * page_size
+            certs, total = await self._certificates.list_by_vessel(vessel_id, offset, page_size)
+            return PaginatedResponse(
+                items=[self._to_certificate_read(c) for c in certs],
+                total=total,
+                page=page,
+                page_size=page_size,
+            )
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    async def create_certificate(
+        self, vessel_id: VesselId, payload: VesselCertificateBase
+    ) -> VesselCertificateRead:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None:
+                raise VesselNotFoundError()
+
+            org_id = await self._resolve_org_id()
+            user_id = await self._resolve_user_id()
+
+            cert = VesselCertificate(
+                vessel_id=vessel_id,
+                org_id=org_id,
+                created_by=user_id,
+                domain=payload.domain,
+                description=payload.description,
+                identifier=payload.identifier,
+                issuer=payload.issuer,
+                issued_date=payload.issued_date,
+                expiry_date=payload.expiry_date,
+                status=payload.status,
+            )
+            await self._certificates.create(cert)
+            await self._db.commit()
+            return self._to_certificate_read(cert)
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    async def get_certificate(
+        self, vessel_id: VesselId, certificate_id: CertificateId
+    ) -> VesselCertificateRead:
+        vessel = await self._vessels.get_by_id(vessel_id)
+        if vessel is None:
+            raise VesselNotFoundError()
+
+        cert = await self._certificates.get_by_id(certificate_id)
+        if cert is None or cert.vessel_id != vessel_id:
+            raise VesselNotFoundError(metadata={"reason": "certificate_not_found"})
+        return self._to_certificate_read(cert)
+
+    async def update_certificate(
+        self, vessel_id: VesselId, certificate_id: CertificateId, payload: VesselCertificateUpdate
+    ) -> VesselCertificateRead:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None:
+                raise VesselNotFoundError()
+
+            cert = await self._certificates.get_by_id(certificate_id)
+            if cert is None or cert.vessel_id != vessel_id:
+                raise VesselNotFoundError(metadata={"reason": "certificate_not_found"})
+
+            for field, value in payload.model_dump(exclude_unset=True).items():
+                setattr(cert, field, value)
+
+            await self._certificates.update(cert)
+            await self._db.commit()
+            return self._to_certificate_read(cert)
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    async def delete_certificate(
+        self, vessel_id: VesselId, certificate_id: CertificateId
+    ) -> None:
+        try:
+            vessel = await self._vessels.get_by_id(vessel_id)
+            if vessel is None:
+                raise VesselNotFoundError()
+
+            cert = await self._certificates.get_by_id(certificate_id)
+            if cert is None or cert.vessel_id != vessel_id:
+                raise VesselNotFoundError(metadata={"reason": "certificate_not_found"})
+
+            await self._certificates.delete(certificate_id)
+            await self._db.commit()
+        except Exception:
+            await self._db.rollback()
+            raise
+
+    # ───────────────────────────────────────────────────────────────────
     # Helpers
     # ───────────────────────────────────────────────────────────────────
 
@@ -324,4 +436,19 @@ class VesselService(VesselServiceProtocol):
             depth_moulded_m=dimensions.depth_moulded_m,
             created_at=dimensions.created_at,
             updated_at=dimensions.updated_at,
+        )
+
+    def _to_certificate_read(self, cert: VesselCertificate) -> VesselCertificateRead:
+        return VesselCertificateRead(
+            id=cert.id,
+            vessel_id=cert.vessel_id,
+            domain=cert.domain,
+            description=cert.description,
+            identifier=cert.identifier,
+            issuer=cert.issuer,
+            issued_date=cert.issued_date,
+            expiry_date=cert.expiry_date,
+            status=cert.status,
+            created_at=cert.created_at,
+            updated_at=cert.updated_at,
         )

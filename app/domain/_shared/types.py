@@ -5,6 +5,7 @@ OrganizationId: TypeAlias = str
 DocumentId: TypeAlias = str
 DocumentFileId: TypeAlias = str
 VesselId: TypeAlias = str
+CertificateId: TypeAlias = str
 
 OrganizationMemberId: TypeAlias = tuple[str, str]
 

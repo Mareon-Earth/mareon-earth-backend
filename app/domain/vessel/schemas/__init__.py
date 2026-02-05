@@ -1,7 +1,12 @@
 from .vessel import VesselCreate, VesselRead, VesselUpdate, VesselListParams
 from .identity import VesselIdentityCreate, VesselIdentityRead, VesselIdentityUpdate
 from .dimensions import VesselDimensionsCreate, VesselDimensionsRead, VesselDimensionsUpdate
-from .certificate import VesselCertificateCreate, VesselCertificateRead
+from .certificate import (
+    VesselCertificateBase,
+    VesselCertificateCreate,
+    VesselCertificateRead,
+    VesselCertificateUpdate,
+)
 
 __all__ = [
     "VesselCreate",
@@ -14,6 +19,8 @@ __all__ = [
     "VesselDimensionsCreate",
     "VesselDimensionsRead",
     "VesselDimensionsUpdate",
+    "VesselCertificateBase",
     "VesselCertificateCreate",
     "VesselCertificateRead",
+    "VesselCertificateUpdate",
 ]

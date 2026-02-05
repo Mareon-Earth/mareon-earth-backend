@@ -10,6 +10,7 @@ from .types import (
     ClerkOrganizationId,
     StoragePath,
     VesselId,
+    CertificateId,
 )
 from .normalize import strip_or_none
 from .schemas import RequestSchema, ResponseSchema, PaginationParams, PaginatedResponse
@@ -30,6 +31,7 @@ __all__ = [
     "ClerkOrganizationId",
     "StoragePath",
     "VesselId",
+    "CertificateId",
     "strip_or_none",
     "RequestSchema",
     "ResponseSchema",

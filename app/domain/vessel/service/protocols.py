@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from app.domain._shared import PaginatedResponse
-from app.domain._shared.types import VesselId
+from app.domain._shared.types import VesselId, CertificateId
 from app.domain.vessel.schemas import (
     VesselCreate,
     VesselRead,
@@ -15,6 +15,9 @@ from app.domain.vessel.schemas import (
     VesselDimensionsCreate,
     VesselDimensionsRead,
     VesselDimensionsUpdate,
+    VesselCertificateBase,
+    VesselCertificateRead,
+    VesselCertificateUpdate,
 )
 
 
@@ -35,3 +38,20 @@ class VesselServiceProtocol(Protocol):
     async def upsert_dimensions(self, vessel_id: VesselId, payload: VesselDimensionsCreate) -> VesselDimensionsRead: ...
     async def update_dimensions(self, vessel_id: VesselId, payload: VesselDimensionsUpdate) -> VesselDimensionsRead: ...
     async def delete_dimensions(self, vessel_id: VesselId) -> None: ...
+
+    # Certificate management
+    async def list_certificates(
+        self, vessel_id: VesselId, page: int, page_size: int
+    ) -> PaginatedResponse[VesselCertificateRead]: ...
+    async def create_certificate(
+        self, vessel_id: VesselId, payload: VesselCertificateBase
+    ) -> VesselCertificateRead: ...
+    async def get_certificate(
+        self, vessel_id: VesselId, certificate_id: CertificateId
+    ) -> VesselCertificateRead: ...
+    async def update_certificate(
+        self, vessel_id: VesselId, certificate_id: CertificateId, payload: VesselCertificateUpdate
+    ) -> VesselCertificateRead: ...
+    async def delete_certificate(
+        self, vessel_id: VesselId, certificate_id: CertificateId
+    ) -> None: ...

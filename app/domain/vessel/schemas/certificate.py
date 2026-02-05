@@ -49,6 +49,16 @@ class VesselCertificateCreate(VesselCertificateBase):
         description="ID of the vessel this certificate belongs to.",
     )
 
+class VesselCertificateUpdate(RequestSchema):
+    """Partial update for vessel certificate."""
+    domain: CertificateDomain | None = None
+    description: str | None = None
+    identifier: str | None = None
+    issuer: str | None = None
+    issued_date: date | None = None
+    expiry_date: date | None = None
+    status: CertificateStatus | None = None
+
 
 class VesselCertificateRead(ResponseSchema):
     id: str
