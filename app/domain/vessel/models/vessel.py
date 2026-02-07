@@ -49,6 +49,7 @@ class Vessel(UUIDPrimaryKeyMixin, TimestampsMixin, CreatedByUserMixin, OrgScoped
         uselist=False,
         cascade="all, delete-orphan",
         passive_deletes=True,
+        lazy="selectin",
     )
 
     dimensions: sa.Mapped["VesselDimensions | None"] = sa.relationship(
@@ -57,6 +58,7 @@ class Vessel(UUIDPrimaryKeyMixin, TimestampsMixin, CreatedByUserMixin, OrgScoped
         uselist=False,
         cascade="all, delete-orphan",
         passive_deletes=True,
+        lazy="selectin",
     )
 
     certificates: sa.Mapped[list["VesselCertificate"]] = sa.relationship(
@@ -66,4 +68,3 @@ class Vessel(UUIDPrimaryKeyMixin, TimestampsMixin, CreatedByUserMixin, OrgScoped
         passive_deletes=True,
         lazy="selectin",
     )
-
