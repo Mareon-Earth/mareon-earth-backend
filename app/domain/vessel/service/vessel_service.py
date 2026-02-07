@@ -104,6 +104,7 @@ class VesselService(VesselServiceProtocol):
 
             await self._vessels.create(vessel)
             await self._db.commit()
+            await self._db.refresh(vessel, attribute_names=["identity", "dimensions"])
             return self._to_vessel_read(vessel)
         except Exception:
             await self._db.rollback()
@@ -141,6 +142,7 @@ class VesselService(VesselServiceProtocol):
 
             await self._vessels.update(vessel)
             await self._db.commit()
+            await self._db.refresh(vessel, attribute_names=["identity", "dimensions"])
             return self._to_vessel_read(vessel)
         except Exception:
             await self._db.rollback()
@@ -182,6 +184,7 @@ class VesselService(VesselServiceProtocol):
 
             await self._db.flush()
             await self._db.commit()
+            await self._db.refresh(vessel, attribute_names=["identity"])
             return self._to_identity_read(vessel.identity)
         except Exception:
             await self._db.rollback()
@@ -198,6 +201,7 @@ class VesselService(VesselServiceProtocol):
 
             await self._identities.update(vessel.identity)
             await self._db.commit()
+            await self._db.refresh(vessel, attribute_names=["identity"])
             return self._to_identity_read(vessel.identity)
         except Exception:
             await self._db.rollback()
@@ -235,6 +239,7 @@ class VesselService(VesselServiceProtocol):
 
             await self._db.flush()
             await self._db.commit()
+            await self._db.refresh(vessel, attribute_names=["dimensions"])
             return self._to_dimensions_read(vessel.dimensions)
         except Exception:
             await self._db.rollback()
@@ -251,6 +256,7 @@ class VesselService(VesselServiceProtocol):
 
             await self._dimensions.update(vessel.dimensions)
             await self._db.commit()
+            await self._db.refresh(vessel, attribute_names=["dimensions"])
             return self._to_dimensions_read(vessel.dimensions)
         except Exception:
             await self._db.rollback()
@@ -317,6 +323,7 @@ class VesselService(VesselServiceProtocol):
             )
             await self._certificates.create(cert)
             await self._db.commit()
+            await self._db.refresh(cert)
             return self._to_certificate_read(cert)
         except Exception:
             await self._db.rollback()
@@ -351,6 +358,7 @@ class VesselService(VesselServiceProtocol):
 
             await self._certificates.update(cert)
             await self._db.commit()
+            await self._db.refresh(cert)
             return self._to_certificate_read(cert)
         except Exception:
             await self._db.rollback()
