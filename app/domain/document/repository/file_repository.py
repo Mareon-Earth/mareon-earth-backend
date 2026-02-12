@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain._shared.types import DocumentId, DocumentFileId
@@ -64,6 +64,37 @@ class DocumentFileRepository(DocumentFileRepositoryProtocol):
         stmt = select(func.count()).select_from(DocumentFile).where(*filters)
         result = await self._db.execute(stmt)
         return result.scalar() or 0
+
+    async def count_files_bulk(
+        self,
+        document_ids: list[DocumentId],
+    ) -> dict[DocumentId, tuple[int, int]]:
+        """
+        Return file counts for multiple documents in a single query.
+
+        Returns a dict mapping document_id → (total_count, uploaded_count).
+        Documents with no files are not included (callers should default to (0, 0)).
+        """
+        if not document_ids:
+            return {}
+
+        stmt = (
+            select(
+                DocumentFile.document_id,
+                func.count().label("total"),
+                func.sum(
+                    case((DocumentFile.source_uri.isnot(None), 1), else_=0)
+                ).label("uploaded"),
+            )
+            .where(DocumentFile.document_id.in_(document_ids))
+            .group_by(DocumentFile.document_id)
+        )
+
+        result = await self._db.execute(stmt)
+        return {
+            row.document_id: (int(row.total), int(row.uploaded))
+            for row in result.all()
+        }
 
     async def get_latest_file_for_document(
         self,

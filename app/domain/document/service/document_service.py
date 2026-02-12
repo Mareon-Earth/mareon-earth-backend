@@ -210,13 +210,13 @@ class DocumentService(DocumentServiceProtocol):
             created_before=filters.created_before,
         )
 
+        # Single query to get all file counts — avoids N+1
+        doc_ids = [doc.id for doc in documents]
+        counts = await self._files.count_files_bulk(doc_ids)
+
         items: list[DocumentSummary] = []
         for doc in documents:
-            file_count = await self._files.count_files_for_document(doc.id)
-            uploaded_file_count = await self._files.count_files_for_document(
-                doc.id, uploaded_only=True
-            )
-
+            file_count, uploaded_file_count = counts.get(doc.id, (0, 0))
             items.append(
                 DocumentSummary(
                     id=doc.id,

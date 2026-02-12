@@ -8,6 +8,7 @@ class AppSettings(BaseSettings):
     app_version: str = "0.1.0"
     port: int = 8000
     api_v1_prefix: str = "/api/v1"
+    gcp_project_id: str = "mareon"
 
     @property
     def is_local(self) -> bool:

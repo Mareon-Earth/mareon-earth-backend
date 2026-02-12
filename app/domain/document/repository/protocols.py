@@ -59,6 +59,12 @@ class DocumentFileRepositoryProtocol(BaseRepository[DocumentFile, DocumentFileId
     ) -> int: ...
 
     @abstractmethod
+    async def count_files_bulk(
+        self,
+        document_ids: list[DocumentId],
+    ) -> dict[DocumentId, tuple[int, int]]: ...
+
+    @abstractmethod
     async def get_latest_file_for_document(
         self,
         document_id: DocumentId,

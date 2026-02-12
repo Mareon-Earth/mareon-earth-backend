@@ -120,7 +120,14 @@ class VesselService(VesselServiceProtocol):
         try:
             org_id = await self._resolve_org_id()
             offset = (params.page - 1) * params.page_size
-            vessels, total = await self._vessels.list_by_org(org_id, offset, params.page_size)
+            vessels, total = await self._vessels.list_by_org(
+                org_id,
+                offset,
+                params.page_size,
+                name=params.name,
+                vessel_type=params.vessel_type,
+                flag_state=params.flag_state,
+            )
             return PaginatedResponse(
                 items=[self._to_vessel_read(v) for v in vessels],
                 total=total,

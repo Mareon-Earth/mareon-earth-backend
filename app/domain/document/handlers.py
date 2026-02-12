@@ -17,6 +17,7 @@ from app.core.pubsub import (
     PubSubTopic,
     get_publisher,
 )
+from app.domain._shared.gcs import build_parsing_result_uri
 from app.domain.processing.enums import ParsingJobStatus
 from app.domain.processing.models import ParsingJob
 from app.domain.processing.repository import ParsingJobRepository
@@ -48,19 +49,6 @@ class ParsedUploadPath:
             document_file_id=match.group(3),
             filename=match.group(4),
         )
-
-
-def build_result_gcs_uri(bucket: str, org_id: str, document_id: str, file_id: str) -> str:
-    """
-    Build the predefined GCS URI where parsing results should be uploaded.
-    
-    Pattern: gs://{bucket}/org-uploads-parsed/{org_id}/documents/{document_id}/files/{file_id}/result.json
-    """
-    return (
-        f"gs://{bucket}/org-uploads-parsed/"
-        f"{org_id}/documents/{document_id}/"
-        f"files/{file_id}/result.json"
-    )
 
 
 class DocumentUploadHandler(GcsUploadHandler):
@@ -175,7 +163,7 @@ class DocumentUploadHandler(GcsUploadHandler):
             return None
 
         # Predefine the result URI so the worker knows where to upload
-        result_gcs_uri = build_result_gcs_uri(
+        result_gcs_uri = build_parsing_result_uri(
             bucket=metadata.bucket,
             org_id=parsed.org_id,
             document_id=parsed.document_id,

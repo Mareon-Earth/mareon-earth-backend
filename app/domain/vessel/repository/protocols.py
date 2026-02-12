@@ -13,7 +13,14 @@ class VesselRepositoryProtocol(BaseRepository[Vessel, VesselId]):
 
     @abstractmethod
     async def list_by_org(
-        self, org_id: OrganizationId, offset: int = 0, limit: int = 20
+        self,
+        org_id: OrganizationId,
+        offset: int = 0,
+        limit: int = 20,
+        *,
+        name: str | None = None,
+        vessel_type: str | None = None,
+        flag_state: str | None = None,
     ) -> tuple[list[Vessel], int]: ...
 
     @abstractmethod

@@ -14,7 +14,7 @@ from app.infrastructure.db import database_lifespan
 async def lifespan(app: FastAPI):
     # Initialize Pub/Sub handlers
     settings = get_settings()
-    setup_pubsub(project_id="mareon")
+    setup_pubsub(project_id=settings.gcp_project_id)
 
     async with database_lifespan():
         yield

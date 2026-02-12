@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import Request, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +14,8 @@ from app.core.auth.tokens import verify_request_with_clerk
 from app.infrastructure.db import get_db_session
 from app.domain.users.repository import UserRepository
 from app.domain.organization.repository import OrganizationRepository
+
+logger = logging.getLogger(__name__)
 
 
 async def get_auth_context(
@@ -50,10 +54,10 @@ async def get_auth_context(
             user_source = "db"
             # Self-healing: Sync to Clerk metadata so next token has it
             try:
-                print(f"[Auth] Self-healing: Syncing internal user_id to Clerk for {user_id}")
+                logger.info("[Auth] Self-healing: syncing internal user_id to Clerk for %s", user_id)
                 await update_user_metadata(user_id, public_metadata={"user_id": user.id})
             except Exception as e:
-                print(f"[Auth] Failed to sync user metadata: {e}")
+                logger.warning("[Auth] Failed to sync user metadata for %s: %s", user_id, e)
 
     # Resolve Internal Org ID
     org_metadata = payload.get("org_public_metadata") or {}
@@ -72,10 +76,10 @@ async def get_auth_context(
             org_source = "db"
             # Self-healing: Sync to Clerk metadata so next token has it
             try:
-                print(f"[Auth] Self-healing: Syncing internal org_id to Clerk for {org_id}")
+                logger.info("[Auth] Self-healing: syncing internal org_id to Clerk for %s", org_id)
                 await update_organization_metadata(org_id, public_metadata={"org_id": org.id})
             except Exception as e:
-                print(f"[Auth] Failed to sync org metadata: {e}")
+                logger.warning("[Auth] Failed to sync org metadata for %s: %s", org_id, e)
 
     return AuthContext(
         user_id=user_id,

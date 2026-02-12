@@ -6,29 +6,9 @@ from app.domain.processing.models import ParsingJob
 from app.domain.processing.schemas import ParsingJobCreate, ParsingJobRead
 from app.domain.processing.repository import ParsingJobRepositoryProtocol
 from app.domain.processing.enums import ParsingJobStatus
+from app.domain._shared.gcs import build_parsing_result_uri_from_source
 import app.domain.processing.exceptions as exc
 from .protocols import ParsingJobServiceProtocol
-
-
-def build_result_gcs_uri(source_uri: str, org_id: str, document_id: str, file_id: str) -> str:
-    """
-    Build the predefined GCS URI where parsing results should be uploaded.
-    
-    Extracts bucket from source_uri and constructs result path.
-    Pattern: gs://{bucket}/org-uploads-parsed/{org_id}/documents/{document_id}/files/{file_id}/result.json
-    """
-    # Extract bucket from source_uri (gs://bucket/path)
-    if not source_uri or not source_uri.startswith("gs://"):
-        raise ValueError(f"Invalid source_uri: {source_uri}")
-    
-    parts = source_uri[5:].split("/", 1)
-    bucket = parts[0]
-    
-    return (
-        f"gs://{bucket}/org-uploads-parsed/"
-        f"{org_id}/documents/{document_id}/"
-        f"files/{file_id}/result.json"
-    )
 
 
 class ParsingJobService(ParsingJobServiceProtocol):
@@ -71,10 +51,9 @@ class ParsingJobService(ParsingJobServiceProtocol):
         # 3. Compute result_gcs_uri if source_gcs_uri is provided
         result_gcs_uri = None
         if job.source_gcs_uri:
-            result_gcs_uri = job.result_gcs_uri or build_result_gcs_uri(
+            result_gcs_uri = job.result_gcs_uri or build_parsing_result_uri_from_source(
                 source_uri=job.source_gcs_uri,
-                org_id=str(job.org_id),
-                document_id=str(job.document_file_id),  # Using file_id as document context
+                document_id=str(job.document_file_id),
                 file_id=str(job.document_file_id),
             )
 
